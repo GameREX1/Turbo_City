@@ -131,7 +131,7 @@ const cars = [
 let selectedCar=0,started=false,car,carData,scene,camera,renderer,clock;
 let speed=0,yaw=0,verticalSpeed=0,airHeight=0,nitro=100,nitroActive=false,driftAmount=0,jumpCooldown=0;
 let buildings=[],ramps=[],controls={forward:false,back:false,left:false,right:false,nitro:false,drift:false};
-let wheelGroups=[],smokeTimer=0,lastToast=0;
+let wheelGroups=[],smokeTimer=0,lastToast=0,wasBoosting=false;
 const keys={};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const damp=(a,b,lambda,dt)=>THREE.MathUtils.damp(a,b,lambda,dt);
@@ -224,13 +224,14 @@ function addBuilding(x,z,w,d,h,seed){
 
 function buildBuildings(){
  let seed=1;
- for(let gx=-3;gx<=3;gx++)for(let gz=-3;gz<=3;gz++){
-  const cx=gx*100,cz=gz*100;
+ // Place each block in the middle of the space between roads.
+ for(let gx=-4;gx<=3;gx++)for(let gz=-4;gz<=3;gz++){
+  const cx=gx*100+50,cz=gz*100+50;
   const count=2+(seed%3);
   for(let j=0;j<count;j++){
    seed++;
    const w=18+(seed*7%15),d=18+(seed*11%16);
-   const ox=((seed*17)%48)-24,oz=((seed*23)%48)-24;
+   const ox=((seed*17)%28)-14,oz=((seed*23)%28)-14;
    const x=cx+ox,z=cz+oz;
    const h=22+(seed*13%52);
    addBuilding(x,z,w,d,h,seed);
@@ -252,7 +253,7 @@ function buildParks(){
  }
 }
 function buildRamps(){
- const positions=[[-150,-54,0],[-54,150,Math.PI/2],[246,-150,0],[150,246,Math.PI/2],[-250,246,Math.PI/2]];
+ const positions=[[-200,-50,0],[-50,200,Math.PI/2],[200,-150,0],[150,200,Math.PI/2],[-300,250,Math.PI/2]];
  positions.forEach((p,i)=>{
   const ramp=new THREE.Group();ramp.position.set(p[0],.15,p[1]);ramp.rotation.y=p[2];
   const slope=new THREE.Mesh(new THREE.BoxGeometry(13,1.4,19),mat(i%2?0x10a9c8:0xff7438,.55,.25,{emissive:i%2?0x063e4a:0x4c1708,emissiveIntensity:.3}));
@@ -313,7 +314,7 @@ function createCar(data){
 function resetCar(){
  if(car)scene.remove(car);
  carData=cars[selectedCar];car=createCar(carData);
- car.position.set(0,0,0);car.rotation.y=0;yaw=0;speed=0;verticalSpeed=0;airHeight=0;nitro=100;driftAmount=0;jumpCooldown=0;
+ car.position.set(0,0,0);car.rotation.y=0;yaw=0;speed=0;verticalSpeed=0;airHeight=0;nitro=100;driftAmount=0;jumpCooldown=0;wasBoosting=false;
  document.getElementById("toast").style.opacity="0";
 }
 function showToast(message){
@@ -360,8 +361,11 @@ function updateDrive(dt){
  else speed=damp(speed,speed,1,dt);
  if(drift)speed=damp(speed,0,0.18,dt);
  speed=clamp(speed,-16,maxForward);
- if(boost){nitro=Math.max(0,nitro-24*dt);if(Math.random()<.04)showToast("NITRO BOOST");}
- else nitro=Math.min(100,nitro+5.2*dt);
+ if(boost){
+  nitro=Math.max(0,nitro-24*dt);
+  if(!wasBoosting)showToast("NITRO BOOST");
+ }else nitro=Math.min(100,nitro+5.2*dt);
+ wasBoosting=boost;
  const movingFactor=clamp(Math.abs(speed)/13,.15,1);
  const reverseFactor=speed<0?-1:1;
  const steering=(right?1:0)-(left?1:0);
