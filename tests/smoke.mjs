@@ -41,7 +41,11 @@ try {
 
   // Drive forward and verify both speed and world position change.
   await page.keyboard.down("w");
-  await page.waitForTimeout(1300);
+  await page.waitForFunction(() => Number(document.querySelector("#speed")?.innerText || 0) > 5, null, { timeout: 8000, polling: 100 });
+  await page.waitForFunction((startZ) => {
+    const pose=window.__turboCityDebug?.().position;
+    return pose && pose.z < startZ - 1;
+  }, start.position.z, { timeout: 8000, polling: 100 });
   await page.keyboard.up("w");
   const forward = await state();
   const forwardSpeed = Number(await page.locator("#speed").innerText());
