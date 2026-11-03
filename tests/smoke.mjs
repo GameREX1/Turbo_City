@@ -152,6 +152,7 @@ try {
   }, { timeout: 40000 });
   await highSpeedPage.locator("#start-button").click();
   const highSpeedState = () => highSpeedPage.evaluate(() => window.__turboCityDebug?.());
+  await highSpeedPage.evaluate(() => window.__turboCityPrepareHighSpeed?.());
   await highSpeedPage.keyboard.down("w");
   try {
     await highSpeedPage.waitForFunction(
