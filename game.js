@@ -26,6 +26,18 @@ const cars = [
 
 const input = { gas:false, brake:false, reverse:false, left:false, right:false };
 const keys = Object.create(null);
+// Optional browser-test diagnostics; disabled for normal visitors.
+if (new URLSearchParams(window.location.search).has("ciDebug")) {
+  window.__turboCityDebug = () => {
+    const forward = new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
+    return {
+      keys:{...keys}, input:{...input},
+      velocity:{x:world.velocity.x,y:world.velocity.y,z:world.velocity.z},
+      forwardSpeed:world.velocity.dot(forward),
+      yaw:world.yaw, started:world.started, paused:world.paused
+    };
+  };
+}
 const world = {
   buildings: [], lamps: [], stars: [], obstacles: [], gates: [], traffic: [], windows: [],
   citySeed: 7183, score:0, collected:0, raceActive:false, raceStart:0, raceIndex:0,
