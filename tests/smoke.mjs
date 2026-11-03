@@ -82,6 +82,7 @@ try {
   await page.keyboard.up("a");
   const afterLeft = await state();
   assert.ok(Math.abs(afterLeft.yaw - headingBefore) > 0.12, "A should rotate the car's heading");
+  assert.ok(Math.abs(afterLeft.playerYaw + afterLeft.yaw) < 1e-6, "visual car body must rotate in the same direction as its physics heading");
   const leftTurnX = afterLeft.position.x;
 
   await page.keyboard.down("w");
