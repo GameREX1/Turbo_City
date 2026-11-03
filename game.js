@@ -757,7 +757,8 @@ function toggleCamera() {
 function recoverCar() {
   if(!player)return;
   player.position.set(world.prevPosition.x,0,world.prevPosition.z);
-  world.speed=0;world.verticalSpeed=0;world.air=0;world.lateral=0;world.drift=0;
+  world.velocity.set(0,0,0);
+  world.speed=0;world.lateral=0;
   player.rotation.set(0,world.yaw,0);
   toast("VEHICLE RECOVERED");
 }
@@ -991,7 +992,7 @@ function updateCamera(dt) {
   camera.position.lerp(desired,follow);
   camera.lookAt(target);
   const speedFactor=clamp(Math.abs(world.speed)/78,0,1);
-  camera.fov=damp(camera.fov,61+speedFactor*8+(input.nitro?2:0),2.2,dt);
+  camera.fov=damp(camera.fov,61+speedFactor*8+0,2.2,dt);
   camera.updateProjectionMatrix();
 }
 
