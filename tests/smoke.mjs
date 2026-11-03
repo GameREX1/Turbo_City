@@ -125,13 +125,39 @@ try {
   assert.ok(mobileDrive.forwardSpeed > 0.5, "mobile gas button should accelerate");
 
   assert.deepEqual(pageErrors, [], "browser runtime errors: " + pageErrors.join(" | "));
-  console.log("PASS: garage selector, forward driving, brake, reverse movement, steering/heading, camera, pause/resume, recovery and mobile controls");
+  console.log("PASS: garage selector, quality presets, forward driving, brake, reverse movement, steering/heading, camera, pause/resume, recovery and mobile controls");
   console.log("DRIVE TRACE:", {
     forwardKmh: forwardSpeed,
     reverseMps: reversed.forwardSpeed.toFixed(2),
     leftHeadingChange: (afterLeft.yaw - headingBefore).toFixed(2),
     xAfterRight: afterRight.position.x.toFixed(2),
     mobileForwardMps: mobileDrive.forwardSpeed.toFixed(2)
+  });
+
+  // Separate low-resolution render check: unlike ciDebug, ciVisual draws frames.
+  await page.close();
+  const visualPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const visualErrors = [];
+  visualPage.on("pageerror", error => visualErrors.push(error.message));
+  await visualPage.goto("http://127.0.0.1:4173/?ciVisual=1", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await visualPage.waitForFunction(() => {
+    const button = document.querySelector("#start-button");
+    return button && !button.disabled;
+  }, { timeout: 40000 });
+  const visualStart = await visualPage.evaluate(() => window.__turboCityDebug?.());
+  await visualPage.locator("#start-button").click();
+  await visualPage.waitForTimeout(1500);
+  const visualEnd = await visualPage.evaluate(() => window.__turboCityDebug?.());
+  const visualFps = (visualEnd.frameCount - visualStart.frameCount) / 1.5;
+  assert.ok(visualEnd.renderInfo.calls > 0, "visual test should render draw calls");
+  assert.ok(visualEnd.renderInfo.triangles > 0, "visual test should render triangles");
+  assert.ok(visualFps > 8, "low-resolution render loop should exceed 8 FPS; got " + visualFps.toFixed(1));
+  assert.deepEqual(visualErrors, [], "visual render errors: " + visualErrors.join(" | "));
+  console.log("VISUAL RENDER TRACE:", {
+    approxFps: visualFps.toFixed(1),
+    drawCalls: visualEnd.renderInfo.calls,
+    triangles: visualEnd.renderInfo.triangles,
+    testPixelRatio: visualEnd.renderInfo.pixelRatio
   });
 } finally {
   await browser.close();
