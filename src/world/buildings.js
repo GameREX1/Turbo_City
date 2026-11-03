@@ -41,21 +41,29 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     const colsX=Math.max(2,Math.floor(w/4.4));
     const colsZ=Math.max(2,Math.floor(d/4.4));
     const winW=1.35, winH=1.75;
+    const addWindow=(wx,wy,wz,ry,width=winW,height=winH,warm=false)=>{
+      const target=warm?windowMatrices.warm:windowMatrices.cool;
+      target.push({x:wx,y:wy,z:wz,ry,sx:width,sy:height});
+      const frame=windowMatrices.frames;
+      const depth=.12,border=.075;
+      for(const offset of [-1,1]){
+        frame.push({x:wx,y:wy+offset*(height/2+border/2),z:wz,ry,sx:width+border*2,sy:border,sz:depth});
+        frame.push({x:wx+offset*(width/2+border/2),y:wy,z:wz,ry,sx:border,sy:height,sz:depth});
+      }
+    };
     for(let floor=1;floor<floors;floor++) {
       const yy=floor*4.15;
       for(let k=0;k<colsX;k++) {
         const xx=x-w/2+2.2+k*((w-4.4)/Math.max(1,colsX-1));
         const lit=(index*13+floor*5+k*7)%7===0;
-        const arr=lit?windowMatrices.warm:windowMatrices.cool;
-        arr.push({x:xx,y:yy,z:z+d/2+.055,ry:0,sx:winW,sy:winH});
-        arr.push({x:xx,y:yy,z:z-d/2-.055,ry:Math.PI,sx:winW,sy:winH});
+        addWindow(xx,yy,z+d/2+.055,0,winW,winH,lit);
+        addWindow(xx,yy,z-d/2-.055,Math.PI,winW,winH,lit);
       }
       for(let k=0;k<colsZ;k++) {
         const zz=z-d/2+2.2+k*((d-4.4)/Math.max(1,colsZ-1));
         const lit=(index*11+floor*3+k*9)%8===0;
-        const arr=lit?windowMatrices.warm:windowMatrices.cool;
-        arr.push({x:x+w/2+.055,y:yy,z:zz,ry:Math.PI/2,sx:winW,sy:winH});
-        arr.push({x:x-w/2-.055,y:yy,z:zz,ry:-Math.PI/2,sx:winW,sy:winH});
+        addWindow(x+w/2+.055,yy,zz,Math.PI/2,winW,winH,lit);
+        addWindow(x-w/2-.055,yy,zz,-Math.PI/2,winW,winH,lit);
       }
     }
     // Batch rooftop plant rooms and vents by shared material.
@@ -65,6 +73,29 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       const uz=z+(u%2===0?1:-1)*d*.18;
       batches.rooftop.push({x:ux,y:h+1.05,z:uz,sx:w*.15,sy:1.5,sz:d*.18});
       batches.ventCaps.push({x:ux,y:h+1.9,z:uz,sx:w*.1,sy:.18,sz:d*.12});
+    }
+    // Ground-floor storefront glazing and a shared shop sign give each
+    // block a readable street-level frontage instead of an empty concrete base.
+    const storeWidth=Math.min(w*.68,18);
+    addWindow(x,1.78,z+d/2+.075,0,storeWidth,2.55,false);
+    batches.storeSigns.push({x,y:3.35,z:z+d/2+.20,sx:storeWidth,sy:.46,sz:.12});
+
+    // Recessed air-conditioning units and occasional shallow balconies add
+    // real facade depth while staying in instanced geometry batches.
+    for(let floor=2;floor<floors;floor+=3){
+      const yy=floor*4.15;
+      const acX=x+(floor%2===0?1:-1)*Math.min(w*.28,5);
+      batches.acUnits.push({x:acX,y:yy-.48,z:z+d/2+.24,sx:.78,sy:.50,sz:.42});
+      if((index+floor)%2===0){
+        const balconyW=Math.min(w*.58,7.2);
+        const balconyZ=z+d/2+.58;
+        const balconyY=yy-1.02;
+        batches.balconySlabs.push({x,y:balconyY,z:balconyZ,sx:balconyW,sy:.14,sz:1.12});
+        batches.balconyRails.push({x,y:balconyY+.48,z:balconyZ+.52,sx:balconyW,sy:.075,sz:.09});
+        for(const side of [-1,1]){
+          batches.balconyPosts.push({x:x+side*balconyW*.5,y:balconyY+.27,z:balconyZ+.52,sx:.075,sy:.54,sz:.075});
+        }
+      }
     }
     // Street-level shopfronts use simple neutral sign bands, not glowing neon.
   }
@@ -82,6 +113,21 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       });
       inst.instanceMatrix.needsUpdate=true;
       inst.castShadow=false;inst.receiveShadow=false;scene.add(inst);
+    }
+    if(windowMatrices.frames.length){
+      const frameGeometry=new THREE.BoxGeometry(1,1,1);
+      const frameMaterial=material(0x59646a,.46,.48);
+      const frames=new THREE.InstancedMesh(frameGeometry,frameMaterial,windowMatrices.frames.length);
+      const obj=new THREE.Object3D();
+      windowMatrices.frames.forEach((it,i)=>{
+        obj.position.set(it.x,it.y,it.z);
+        obj.rotation.set(0,it.ry,0);
+        obj.scale.set(it.sx,it.sy,it.sz);
+        obj.updateMatrix();
+        frames.setMatrixAt(i,obj.matrix);
+      });
+      frames.instanceMatrix.needsUpdate=true;
+      frames.castShadow=false;frames.receiveShadow=false;scene.add(frames);
     }
   }
   
@@ -191,10 +237,11 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
   }
 
   function buildCity() {
-    const windowMatrices={cool:[],warm:[]};
+    const windowMatrices={cool:[],warm:[],frames:[]};
     const batches={
       bodies:Array.from({length:7},()=>[]),plinths:[],roofs:[],rooftop:[],ventCaps:[],
-      facadeVertical:[],facadeHorizontal:[]
+      facadeVertical:[],facadeHorizontal:[],storeSigns:[],acUnits:[],
+      balconySlabs:[],balconyRails:[],balconyPosts:[]
     };
     // Subtle concrete/stucco facade texture: fine mineral grain and panel joints.
     const facadeCanvas=document.createElement("canvas");
@@ -232,7 +279,10 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       rooftop:material(0x747a7a,.8,.08),
       ventCap:material(0x454b4e,.72,.16),
       facade:material(0x666e70,.64,.18),
-      facadeBand:material(0xb3b2aa,.72,.08)
+      facadeBand:material(0xb3b2aa,.72,.08),
+      acUnit:material(0x8f9899,.78,.12),
+      balcony:material(0x343d42,.48,.58),
+      balconySlab:material(0x767c7c,.9,.04)
     };
     let seed=71;
     const parkBlocks=new Set(["-2,1","-3,-1","1,1"]);
@@ -272,6 +322,14 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     add(batches.ventCaps,shared.ventCap);
     add(batches.facadeVertical,shared.facade);
     add(batches.facadeHorizontal,shared.facadeBand);
+    add(batches.acUnits,shared.acUnit);
+    add(batches.balconySlabs,shared.balconySlab);
+    add(batches.balconyRails,shared.balcony);
+    add(batches.balconyPosts,shared.balcony);
+    const shopSignMaterial=new THREE.MeshStandardMaterial({
+      map:signTexture("CITY MARKET","#d4c5a3"),roughness:.82,metalness:.04
+    });
+    add(batches.storeSigns,shopSignMaterial);
     buildWindows(windowMatrices);
     buildParks();
     buildStreetFurniture();
