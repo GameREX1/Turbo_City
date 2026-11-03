@@ -18,8 +18,8 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
   }
   
   function buildGroundAndRoads() {
-    const grass = makeNoiseTexture("#647b58","#a4b58b",112);
-    const asphalt = makeNoiseTexture("#31373e","#a0a6a8",41);
+    const grass = makeNoiseTexture("#536b78","#8593a8",112);
+    const asphalt = makeNoiseTexture("#202a3a","#7b8aa7",41);
     grass.repeat.set(90,90);
     const grassMat = new THREE.MeshStandardMaterial({map:grass,roughness:1});
     const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,roughness:.96});
@@ -30,13 +30,20 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),grassMat);
     ground.rotation.x=-Math.PI/2; ground.position.y=-.14; ground.receiveShadow=true; scene.add(ground);
   
-    const concrete = material(0x999d9b,.95);
-    const yellow = material(0xf3c85f,.85);
-    const white = material(0xe2e5e2,.85);
+    const concrete = material(0x65738a,.78,.22);
+    const yellow = material(0xd9e3f2,.72,.12);
+    const white = material(0xd8e9ff,.72,.12);
+    const neonBlue = new THREE.MeshStandardMaterial({color:0x168cff,emissive:0x006dff,emissiveIntensity:2.1,roughness:.3,metalness:.15});
+    const neonCyan = new THREE.MeshStandardMaterial({color:0x3beaff,emissive:0x00bfff,emissiveIntensity:2.45,roughness:.28,metalness:.12});
     const roads = [];
-    const dashV=[],dashH=[],zebraV=[],zebraH=[],stopH=[],stopV=[];
+    const dashV=[],dashH=[],zebraV=[],zebraH=[],stopH=[],stopV=[],neonV=[],neonH=[];
     for(let i=-3;i<=3;i++) roads.push(i*ROAD_SPACING);
     for(const p of roads) {
+      // Continuous cyan edge lighting frames each boulevard like the reference.
+      for(const side of [-1,1]) {
+        neonV.push({x:p+side*13.55,y:.052,z:0});
+        neonH.push({x:0,y:.053,z:p+side*13.55});
+      }
       const v = new THREE.Mesh(new THREE.PlaneGeometry(32,1320),roadMatV);
       v.rotation.x=-Math.PI/2; v.position.set(p,0,0); v.receiveShadow=true; scene.add(v);
       const h = new THREE.Mesh(new THREE.PlaneGeometry(1320,32),roadMatH);
@@ -59,6 +66,8 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
     // All road paint is batched into instanced meshes to keep draw calls low.
     addInstancedBoxes(new THREE.BoxGeometry(.16,.026,7),yellow,dashV);
     addInstancedBoxes(new THREE.BoxGeometry(7,.026,.16),yellow,dashH);
+    addInstancedBoxes(new THREE.BoxGeometry(.16,.045,1320),neonCyan,neonV);
+    addInstancedBoxes(new THREE.BoxGeometry(1320,.045,.16),neonBlue,neonH);
   
     // Zebra crossings and stop bars at the larger intersections.
     for(const x of roads) for(const z of roads) {
