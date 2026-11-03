@@ -22,7 +22,7 @@ Turbo_City/
 │   │   └── car.js           # Player car model, materials, wheels and fallback
 │   ├── world/
 │   │   ├── roads.js         # Ground, asphalt, lanes and crossings
-│   │   ├── buildings.js     # Buildings, windows, parks, trees and street furniture
+│   │   ├── buildings.js     # Glass-tower facades, neon signage, windows, parks, trees and street furniture
 │   │   ├── activities.js    # Skill course, checkpoints and collectible stars
 │   │   └── traffic.js       # AI traffic car creation and movement
 │   └── systems/
@@ -84,6 +84,6 @@ In the repository, open **Settings → Pages**, choose **Deploy from a branch**,
 
 GitHub Pages hosts the browser build; it does not execute C++ or Unity C# source files. The game uses Three.js modules so it can run as a static browser game.
 
-The imported sports-car model is loaded from the Three.js examples host; if it is unavailable, the local procedural car model is used instead. The vehicle model is credited by the Three.js car-materials example to **vicent091036** on Sketchfab: [model page](https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6).
+The seven selectable garage vehicles are handcrafted procedural Three.js models with per-car body profiles, glazing, lighting, aero details and four animated wheels. They are original approximations inspired by the named vehicle classes, not licensed factory CAD meshes or photogrammetry scans.
 
 Three.js and its example loaders are loaded from jsDelivr. Google Fonts are loaded from Google Fonts. An internet connection is required for these external resources.
