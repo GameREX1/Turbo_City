@@ -1031,8 +1031,8 @@ function updatePhysics(dt) {
   if(throttle) world.velocity.addScaledVector(forward,spec.power*dt);
   if(controls.brake) {
     // Space is a brake only. It never unexpectedly sends the car into reverse.
-    if(forwardSpeed>0.05) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,34*dt));
-    else if(forwardSpeed<-.05) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,34*dt));
+    if(forwardSpeed>0.05) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,48*dt));
+    else if(forwardSpeed<-.05) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,48*dt));
   } else if(controls.reverse) {
     // S / Down first brakes forward motion, then continues accelerating backwards.
     // Do not brake the car again after it has already entered reverse.
