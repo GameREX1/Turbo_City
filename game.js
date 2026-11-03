@@ -462,6 +462,34 @@ function buildCollectibles() {
   points.forEach((p,i)=>addStar(p[0],p[1],p[2],i));
 }
 
+// The pickup animation is cosmetic; collection is checked against the car's
+// ground position so it remains reliable at higher arcade driving speeds.
+function animateCollectibles(dt) {
+  const t=performance.now()*.001;
+  for(const star of world.stars) {
+    if(!star.active)continue;
+    const g=star.group;
+    g.rotation.y+=dt*1.25;
+    g.position.y=g.userData.baseY+Math.sin(t*2.1+g.userData.id*.7)*.22;
+  }
+}
+function collectStars() {
+  if(!player)return;
+  const radiusSq=4.6*4.6;
+  for(const star of world.stars) {
+    if(!star.active)continue;
+    const dx=player.position.x-star.group.position.x;
+    const dz=player.position.z-star.group.position.z;
+    if(dx*dx+dz*dz<=radiusSq) {
+      star.active=false;
+      star.group.visible=false;
+      world.collected+=1;
+      world.score+=100;
+      toast("STAR COLLECTED  +100",1.15);
+    }
+  }
+}
+
 function createGate(position,index,finish=false) {
   const group=new THREE.Group();
   const ring=new THREE.Mesh(new THREE.TorusGeometry(5.2,.38,12,48),new THREE.MeshStandardMaterial({
@@ -499,20 +527,49 @@ function prepareRace(skillCourse=false) {
   if(world.gates[0])world.gates[0].active=true;
 }
 function buildTraffic() {
-  const colors=[0xe7e4d9,0x2c536f,0x9b3038,0x777f83,0xd2a34b,0x1d3433];
-  for(let i=0;i<10;i++) {
+  const colors=[0xe7e4d9,0x2c536f,0x9b3038,0x777f83,0xd2a34b,0x1d3433,0x526a86];
+  const roadXs=[-320,-160,0,160,320];
+  for(let i=0;i<16;i++) {
     const g=new THREE.Group();
-    const body=material(colors[i%colors.length],.38,.42);
-    box(g,1.85,.62,3.7,body,0,.75,0);
-    box(g,1.56,.58,1.52,material(0x20313c,.18,.6),0,1.28,.05);
-    const tire=material(0x14191d,.95);
-    for(const sx of [-1,1])for(const sz of [-1,1]) {
-      const w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.24,12),tire);
-      w.rotation.z=Math.PI/2;w.position.set(sx*.95,.38,sz*1.18);g.add(w);
+    const direction=i%2===0?1:-1;
+    const paint=new THREE.MeshPhysicalMaterial({
+      color:colors[i%colors.length],metalness:.48,roughness:.28,clearcoat:.85,clearcoatRoughness:.16
+    });
+    const glass=new THREE.MeshPhysicalMaterial({color:0x172b38,metalness:.22,roughness:.12,clearcoat:1});
+    const dark=material(0x10171d,.55,.5);
+    box(g,1.92,.52,4.02,paint,0,.72,0,false);
+    box(g,1.62,.57,1.9,glass,0,1.2,-.02,false);
+    box(g,1.82,.13,.34,dark,0,.47,-2.03,false);
+    box(g,1.82,.13,.34,dark,0,.47,2.03,false);
+    // Headlights and tail lamps help the traffic read as vehicles at a distance.
+    for(const side of [-1,1]) {
+      const head=new THREE.Mesh(new THREE.BoxGeometry(.38,.12,.06),new THREE.MeshStandardMaterial({color:0xf3fbff,emissive:0x8fcfff,emissiveIntensity:1.25}));
+      head.position.set(side*.62,.83,-2.045);g.add(head);
+      const tail=new THREE.Mesh(new THREE.BoxGeometry(.42,.13,.06),new THREE.MeshStandardMaterial({color:0xff3448,emissive:0xb40d20,emissiveIntensity:1.0}));
+      tail.position.set(side*.62,.82,2.045);g.add(tail);
     }
-    const x=(i%2===0?1:-1)*rand(5,10);
-    g.position.set(x,.02,rand(-470,470));scene.add(g);
-    world.traffic.push({group:g,x,z:g.position.z,speed:rand(8,15),direction:i%2===0?1:-1});
+    const tire=material(0x111519,.94);
+    const rim=material(0xb9c3c9,.24,.92);
+    const wheels=[];
+    for(const sx of [-1,1])for(const sz of [-1,1]) {
+      const pivot=new THREE.Group();
+      pivot.position.set(sx*.98,.39,sz*1.27);
+      g.add(pivot);
+      const w=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.24,18),tire);
+      w.rotation.z=Math.PI/2;w.castShadow=true;pivot.add(w);
+      const hub=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.255,14),rim);
+      hub.rotation.z=Math.PI/2;pivot.add(hub);
+      wheels.push(w);
+    }
+    const roadX=roadXs[Math.floor(i/2)%roadXs.length];
+    const laneX=roadX+(direction>0?-6.2:6.2);
+    let z=rand(-490,490);
+    // Keep the spawn intersection clear so the player is not hit at game start.
+    if(Math.abs(laneX)<20&&Math.abs(z)<105)z=z<0?-165:165;
+    g.position.set(laneX,.02,z);
+    g.rotation.y=direction>0?Math.PI:0;
+    scene.add(g);
+    world.traffic.push({group:g,x:laneX,z,speed:rand(9,16),direction,wheels});
   }
 }
 
