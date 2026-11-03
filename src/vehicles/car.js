@@ -3,7 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { CAR_MODEL_URL, DRACO_PATH } from "../config/game.js";
 
-export function createVehicleModule({ scene, material, box, cylinder, cars, getCurrentCarIndex, setLoading }) {
+export function createVehicleModule({ scene, material, box, cylinder, cars, getCurrentCarIndex, isSmokeMode, setLoading }) {
   let vehicleTemplate=null;
   let vehicleWheels=[];
   let brakeLights=[];
