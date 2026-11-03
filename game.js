@@ -34,13 +34,15 @@ if (new URLSearchParams(window.location.search).has("ciDebug")) {
       keys:{...keys}, input:{...input},
       velocity:{x:world.velocity.x,y:world.velocity.y,z:world.velocity.z},
       forwardSpeed:world.velocity.dot(forward),
-      yaw:world.yaw, started:world.started, paused:world.paused
+      yaw:world.yaw, started:world.started, paused:world.paused,
+      frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
     };
   };
 }
 const world = {
   buildings: [], lamps: [], stars: [], obstacles: [], gates: [], traffic: [], windows: [],
   citySeed: 7183, score:0, collected:0, raceActive:false, raceStart:0, raceIndex:0,
+  frameCount:0, physicsTicks:0, lastFrameDt:0,
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false
@@ -1004,6 +1006,7 @@ function updateAudio() {
 
 function updatePhysics(dt) {
   if(!player)return;
+  world.physicsTicks++;
   const controls=readInput();
   brakeLights.forEach(lamp=>{lamp.material.emissiveIntensity=(controls.brake||controls.reverse)?3.2:.75;});
   const spec=cars[currentCarIndex];
@@ -1235,6 +1238,8 @@ function drawMiniMap() {
 function tick() {
   requestAnimationFrame(tick);
   const dt=Math.min(clock.getDelta(),.04);
+  world.frameCount++;
+  world.lastFrameDt=dt;
   animateCollectibles(dt);
   if(world.started && !world.paused) {
     updatePhysics(dt);
