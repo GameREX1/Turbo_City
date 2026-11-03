@@ -9,6 +9,8 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const pageErrors = [];
 page.on("pageerror", error => pageErrors.push(error.message));
 
+const state = () => page.evaluate(() => window.__turboCityDebug?.());
+
 try {
   await page.goto("http://127.0.0.1:4173/?ciDebug=1", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForFunction(() => {
@@ -17,75 +19,113 @@ try {
   }, { timeout: 40000 });
 
   assert.equal(await page.locator("#loading").isVisible(), false, "loading overlay should disappear");
-  assert.ok(await page.locator("#game canvas").count(), "Three.js canvas should be created");
+  assert.ok(await page.locator("#game canvas").count(), "3D canvas should be created");
+
+  // Check the garage selector before driving.
+  const firstCar = await page.locator("#car-name").innerText();
+  await page.locator("#next-car").click();
+  const secondCar = await page.locator("#car-name").innerText();
+  assert.notEqual(firstCar, secondCar, "next-car button should change the selected car");
+  await page.locator("#prev-car").click();
+  assert.equal(await page.locator("#car-name").innerText(), firstCar, "previous-car button should restore the first car");
 
   await page.locator("#start-button").click();
   assert.equal(await page.locator("#hud").isVisible(), true, "HUD should appear after starting");
 
-  // Keyboard acceleration.
+  const start = await state();
+
+  // Drive forward and verify both speed and world position change.
   await page.keyboard.down("w");
-  await page.waitForTimeout(200);
-  console.log("DEBUG while W held:", await page.evaluate(() => window.__turboCityDebug?.()));
-  await page.waitForTimeout(1000);
-  console.log("DEBUG after W hold:", await page.evaluate(() => window.__turboCityDebug?.()));
+  await page.waitForTimeout(1300);
   await page.keyboard.up("w");
-  const accelerated = Number(await page.locator("#speed").innerText());
-  assert.ok(accelerated > 5, "W should accelerate the car; got " + accelerated + " km/h");
+  const forward = await state();
+  const forwardSpeed = Number(await page.locator("#speed").innerText());
+  assert.ok(forwardSpeed > 5, "W should accelerate; got " + forwardSpeed + " km/h");
+  assert.ok(forward.position.z < start.position.z - 1, "W should move the car forward along the road");
 
-  // Space must brake without engaging reverse.
+  // Brake to a stop. Space must never put the gearbox into reverse.
   await page.keyboard.down("Space");
-  await page.waitForTimeout(120);
-  console.log("DEBUG while Space held:", await page.evaluate(() => window.__turboCityDebug?.()));
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(850);
   await page.keyboard.up("Space");
-  const braked = Number(await page.locator("#speed").innerText());
-  console.log("DEBUG after Space released:", await page.evaluate(() => window.__turboCityDebug?.()));
-  assert.ok(braked < accelerated, "Space should reduce speed (" + accelerated + " -> " + braked + ")");
-  assert.notEqual(await page.locator("#gear").innerText(), "R", "Space must not select reverse");
+  const braked = await state();
+  assert.ok(Math.abs(braked.forwardSpeed) < 0.6, "Space should bring the car close to a stop");
+  assert.notEqual(await page.locator("#gear").innerText(), "R", "Space must not engage reverse");
 
-  // S should slow forward travel and then engage reverse.
+  // Reverse should keep accelerating backwards after crossing zero.
+  const reverseStart = (await state()).position.z;
   await page.keyboard.down("s");
-  await page.waitForTimeout(250);
-  console.log("DEBUG while S held:", await page.evaluate(() => window.__turboCityDebug?.()));
-  await page.waitForTimeout(1650);
-  console.log("DEBUG after S hold:", await page.evaluate(() => window.__turboCityDebug?.()));
+  await page.waitForTimeout(1400);
   await page.keyboard.up("s");
-  assert.equal(await page.locator("#gear").innerText(), "R", "S should engage reverse after stopping");
+  const reversed = await state();
+  assert.ok(reversed.forwardSpeed < -1.2, "S should accelerate in reverse; speed was " + reversed.forwardSpeed);
+  assert.ok(reversed.position.z > reverseStart + 1, "reverse should move the car backwards");
+  assert.equal(await page.locator("#gear").innerText(), "R", "reverse gear indicator should show R");
 
-  // Steering, camera cycling, pause and recovery should not throw.
+  // Re-accelerate, steer and verify the car's actual heading changes.
+  await page.keyboard.down("w");
+  await page.waitForTimeout(700);
+  await page.keyboard.up("w");
+  const headingBefore = (await state()).yaw;
   await page.keyboard.down("a");
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(950);
   await page.keyboard.up("a");
+  const afterLeft = await state();
+  assert.ok(Math.abs(afterLeft.yaw - headingBefore) > 0.12, "A should rotate the car's heading");
+  const leftTurnX = afterLeft.position.x;
+
+  await page.keyboard.down("w");
+  await page.waitForTimeout(350);
+  await page.keyboard.up("w");
+  await page.keyboard.down("d");
+  await page.waitForTimeout(950);
+  await page.keyboard.up("d");
+  const afterRight = await state();
+  assert.ok(Number.isFinite(afterRight.yaw), "right steering should keep a valid heading");
+  assert.ok(Math.abs(afterRight.position.x - leftTurnX) > 0.15, "steering should affect the car's world position");
+
+  // Camera and pause/resume.
   await page.locator("#camera-button").click();
   assert.match(await page.locator("#camera-button").innerText(), /FAR CHASE/);
   await page.keyboard.press("c");
   assert.match(await page.locator("#camera-button").innerText(), /HOOD CAM/);
 
   await page.locator("#pause-button").click();
-  assert.equal(await page.locator("#pause-screen").isVisible(), true, "pause button should pause");
+  assert.equal((await state()).paused, true, "pause button should pause the simulation");
   await page.keyboard.press("Enter");
-  assert.equal(await page.locator("#pause-screen").isVisible(), false, "Enter should resume");
+  await page.waitForTimeout(80);
+  assert.equal((await state()).paused, false, "Enter should resume the simulation");
 
+  // Recovery should zero velocity and keep the car upright at a recent safe pose.
   await page.keyboard.press("r");
-  await page.waitForTimeout(120);
-  assert.equal(await page.locator("#speed").innerText(), "000", "R should recover and stop the car");
+  await page.waitForTimeout(80);
+  const recovered = await state();
+  assert.ok(Math.hypot(recovered.velocity.x, recovered.velocity.z) < 0.05, "R should stop the car");
+  assert.equal(await page.locator("#speed").innerText(), "000", "recovery should reset speed");
 
-  // Mobile buttons: gas, brake and reverse must be present and clickable.
+  // Check mobile touch layout and all five drive controls.
   await page.setViewportSize({ width: 390, height: 844 });
-  assert.equal(await page.locator("#touch-controls").isVisible(), true, "mobile controls should appear");
+  assert.equal(await page.locator("#touch-controls").isVisible(), true, "mobile controls should be visible");
   for (const action of ["left", "right", "gas", "brake", "reverse"]) {
-    assert.equal(await page.locator('[data-action="' + action + '"]').count(), 1, "mobile " + action + " control should exist");
+    assert.equal(await page.locator('[data-action="' + action + '"]').count(), 1, "mobile " + action + " button should exist");
   }
   const gas = await page.locator('[data-action="gas"]').boundingBox();
-  assert.ok(gas, "mobile gas button should have a visible hit area");
+  assert.ok(gas, "mobile gas button should have a hit area");
   await page.mouse.move(gas.x + gas.width / 2, gas.y + gas.height / 2);
   await page.mouse.down();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(550);
   await page.mouse.up();
-  assert.ok(Number(await page.locator("#speed").innerText()) > 0, "mobile gas should accelerate");
+  const mobileDrive = await state();
+  assert.ok(mobileDrive.forwardSpeed > 0.5, "mobile gas button should accelerate");
 
   assert.deepEqual(pageErrors, [], "browser runtime errors: " + pageErrors.join(" | "));
-  console.log("PASS: startup, keyboard acceleration, brake, reverse, steering, camera, pause/resume, recovery and mobile controls");
+  console.log("PASS: garage selector, forward driving, brake, reverse movement, steering/heading, camera, pause/resume, recovery and mobile controls");
+  console.log("DRIVE TRACE:", {
+    forwardKmh: forwardSpeed,
+    reverseMps: reversed.forwardSpeed.toFixed(2),
+    leftHeadingChange: (afterLeft.yaw - headingBefore).toFixed(2),
+    xAfterRight: afterRight.position.x.toFixed(2),
+    mobileForwardMps: mobileDrive.forwardSpeed.toFixed(2)
+  });
 } finally {
   await browser.close();
 }
