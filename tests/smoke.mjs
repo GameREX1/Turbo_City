@@ -23,6 +23,17 @@ try {
 
   // Check the garage selector before driving.
   const firstCar = await page.locator("#car-name").innerText();
+  assert.equal(firstCar, "BUGATTI CHIRON", "garage should start with the light-blue Bugatti Chiron");
+  assert.equal(await page.locator("#car-count").innerText(), "01 / 07", "garage should show seven selectable vehicles");
+  const expectedGarageCars = [
+    "BUGATTI CHIRON", "TOYOTA LAND CRUISER", "LAMBORGHINI AVENTADOR SVJ 63",
+    "TOYOTA SUPRA MK4", "NISSAN GT-R R35", "FORD MUSTANG GT", "CHEVROLET CAMARO SS"
+  ];
+  for (const expectedName of expectedGarageCars) {
+    assert.equal(await page.locator("#car-name").innerText(), expectedName, "garage should select " + expectedName);
+    await page.locator("#next-car").click();
+  }
+  assert.equal(await page.locator("#car-name").innerText(), "BUGATTI CHIRON", "garage should cycle back to the first car");
   await page.locator("#next-car").click();
   const secondCar = await page.locator("#car-name").innerText();
   assert.notEqual(firstCar, secondCar, "next-car button should change the selected car");
