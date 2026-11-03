@@ -1,9 +1,12 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   let vehicleWheels=[];
   let brakeLights=[];
   let playerLight=null;
+  let detailedCarAsset=null;
+  let detailedCarLoadAttempted=false;
 
   const profiles = {
     chiron:[[-.50,.64,.33,.72],[-.40,.82,.31,.86],[-.20,.96,.31,.98],[.16,1,.32,.96],[.40,.94,.34,.86],[.50,.80,.36,.72]],
@@ -117,6 +120,41 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     caliper.rotation.x=.12;
 
     vehicleWheels.push({wheel:tire,pivot,front});
+  }
+
+  function buildDetailedCar(index) {
+    const spec=cars[index];
+    const root=new THREE.Group();
+    root.name="TurboCity_Spectral_GT_RS";
+    const model=detailedCarAsset.clone(true);
+
+    // This CC0 asset is authored nose-forward on +X. Turn it to Turbo City's -Z.
+    model.rotation.y=Math.PI/2;
+    const bounds=new THREE.Box3().setFromObject(model);
+    const size=bounds.getSize(new THREE.Vector3());
+    const scale=Math.min(
+      spec.length/Math.max(size.z,.001),
+      spec.width/Math.max(size.x,.001)
+    );
+    model.scale.setScalar(scale);
+    model.position.set(
+      -(bounds.min.x+bounds.max.x)*.5*scale,
+      -bounds.min.y*scale,
+      -(bounds.min.z+bounds.max.z)*.5*scale
+    );
+
+    model.traverse(object=>{
+      if(!object.isMesh)return;
+      object.castShadow=true;
+      object.receiveShadow=true;
+      if(object.name.toLowerCase().includes("tire")) {
+        vehicleWheels.push({wheel:object,pivot:null,front:false,axis:"y"});
+      }
+    });
+    root.add(model);
+    scene.add(root);
+    playerLight=null;
+    return root;
   }
 
   function buildCar(index) {
@@ -350,14 +388,25 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   }
 
   async function loadCarModel() {
-    // The garage cars are handcrafted Three.js models; no external Ferrari
-    // placeholder is downloaded or reused for every vehicle.
-    return true;
+    if(detailedCarLoadAttempted)return Boolean(detailedCarAsset);
+    detailedCarLoadAttempted=true;
+    try {
+      const loader=new GLTFLoader();
+      const gltf=await loader.loadAsync(
+        "https://raw.githubusercontent.com/JaronKBragg7337/spectral-gt-rs/main/spectral_gt_rs_game_ready.glb"
+      );
+      detailedCarAsset=gltf.scene;
+      return true;
+    } catch(error) {
+      console.warn("Detailed CC0 vehicle could not load; using the built-in model.",error);
+      return false;
+    }
   }
 
   function makePlayerVehicle(index) {
     vehicleWheels=[];
     brakeLights=[];
+    if(index===cars.length-1&&detailedCarAsset)return buildDetailedCar(index);
     return buildCar(index);
   }
 
@@ -367,6 +416,6 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     getWheels:()=>vehicleWheels,
     getBrakeLights:()=>brakeLights,
     getPlayerLight:()=>playerLight,
-    isUsingFallback:()=>false
+    isUsingFallback:()=>!detailedCarAsset
   };
 }
