@@ -45,6 +45,10 @@ h1 span{color:var(--cyan)}
 .cycle{width:31px;height:31px;border-radius:8px;border:1px solid #ffffff30;background:#ffffff0a;color:white;font-size:18px;cursor:pointer}
 .cycle:hover{color:var(--cyan);border-color:var(--cyan)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
+.quality-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:13px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#ffffff07}
+.quality-row label{font-size:9px;font-weight:800;letter-spacing:1.2px;color:#a8b8c8;text-transform:uppercase}
+.quality-select{min-width:145px;padding:9px 30px 9px 11px;border:1px solid #ffffff30;border-radius:8px;background:#0b1724;color:#eaf4f8;font:700 10px Inter,Arial,sans-serif;outline:none}
+.quality-select:focus{border-color:var(--cyan)}
 .stat{padding:9px 10px;border-radius:9px;background:#ffffff08}
 .stat span{display:block;color:#8ba0b2;font-size:8px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase}
 .stat b{display:block;margin-top:3px;font:800 20px "Barlow Condensed"}
@@ -137,6 +141,14 @@ h1 span{color:var(--cyan)}
    <div class="stat"><span>Top speed</span><b id="stat-speed">286</b></div>
    <div class="stat"><span>Acceleration</span><b id="stat-acc">92</b></div>
    <div class="stat"><span>Handling</span><b id="stat-hand">88</b></div>
+  </div>
+  <div class="quality-row">
+   <label for="quality-select">Graphics quality</label>
+   <select id="quality-select" class="quality-select">
+    <option value="performance">Performance · Fastest</option>
+    <option value="balanced" selected>Balanced · Recommended</option>
+    <option value="ultra">Ultra · Best visuals</option>
+   </select>
   </div>
   <div class="section-label"><span>Drive mode</span><span>Choose a route</span></div>
   <div class="mode-row">
