@@ -10,7 +10,7 @@ const pageErrors = [];
 page.on("pageerror", error => pageErrors.push(error.message));
 
 try {
-  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.goto("http://127.0.0.1:4173/?ciDebug=1", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForFunction(() => {
     const button = document.querySelector("#start-button");
     return button && !button.disabled;
@@ -31,9 +31,12 @@ try {
 
   // Space must brake without engaging reverse.
   await page.keyboard.down("Space");
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(120);
+  console.log("DEBUG while Space held:", await page.evaluate(() => window.__turboCityDebug?.()));
+  await page.waitForTimeout(700);
   await page.keyboard.up("Space");
   const braked = Number(await page.locator("#speed").innerText());
+  console.log("DEBUG after Space released:", await page.evaluate(() => window.__turboCityDebug?.()));
   assert.ok(braked < accelerated, "Space should reduce speed (" + accelerated + " -> " + braked + ")");
   assert.notEqual(await page.locator("#gear").innerText(), "R", "Space must not select reverse");
 
