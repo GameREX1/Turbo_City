@@ -1,0 +1,37 @@
+name: Turbo City validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  browser-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: node --input-type=module --check < game.js
+
+      - name: Install browser test runner
+        run: npm install --no-save --package-lock=false playwright
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start local web server
+        run: |
+          python3 -m http.server 4173 > /tmp/turbo-city-http.log 2>&1 &
+          echo $! > /tmp/turbo-city-http.pid
+
+      - name: Run gameplay smoke tests
+        run: node tests/smoke.mjs
