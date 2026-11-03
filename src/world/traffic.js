@@ -10,6 +10,7 @@ export function createTrafficModule({ scene, world, material, rand }) {
   const matrixRotation=new THREE.Euler();
   const bodyCounts=colors.map(()=>0);
   const records=[];
+  let updateAccumulator=0;
 
   function makeInstanced(geometry,mat,count) {
     if(!count)return null;
@@ -86,10 +87,10 @@ export function createTrafficModule({ scene, world, material, rand }) {
       world.traffic.push(record);
     }
 
-    const paintMaterials=colors.map(color=>new THREE.MeshPhysicalMaterial({
-      color,metalness:.48,roughness:.28,clearcoat:.85,clearcoatRoughness:.16
+    const paintMaterials=colors.map(color=>new THREE.MeshStandardMaterial({
+      color,metalness:.42,roughness:.34
     }));
-    const glassMaterial=new THREE.MeshPhysicalMaterial({color:0x172b38,metalness:.22,roughness:.12,clearcoat:1});
+    const glassMaterial=new THREE.MeshStandardMaterial({color:0x172b38,metalness:.2,roughness:.2});
     const darkMaterial=material(0x10171d,.55,.5);
     const headMaterial=new THREE.MeshStandardMaterial({color:0xf3fbff,emissive:0x8fcfff,emissiveIntensity:1.25});
     const tailMaterial=new THREE.MeshStandardMaterial({color:0xff3448,emissive:0xb40d20,emissiveIntensity:1.0});
@@ -106,12 +107,18 @@ export function createTrafficModule({ scene, world, material, rand }) {
   }
 
   function updateTraffic(dt) {
+    // Traffic is background scenery: update its instance matrices at 30 Hz,
+    // not on every render frame.
+    updateAccumulator+=Math.min(dt,.1);
+    if(updateAccumulator<1/30)return;
+    const step=updateAccumulator;
+    updateAccumulator=0;
     for(const record of records) {
-      record.z+=record.speed*record.direction*dt;
+      record.z+=record.speed*record.direction*step;
       if(record.z>520)record.z=-520;
       if(record.z<-520)record.z=520;
       record.group.position.z=record.z;
-      record.spin+=record.speed*record.direction*dt/.35;
+      record.spin+=record.speed*record.direction*step/.35;
     }
     refreshTrafficMatrices();
   }
