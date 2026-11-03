@@ -40,6 +40,7 @@ try {
   await page.keyboard.up("w");
   const forward = await state();
   const forwardSpeed = Number(await page.locator("#speed").innerText());
+  console.log("FORWARD POSITION TRACE:", {start:start.position,after:forward.position,velocity:forward.velocity,speed:forwardSpeed,physicsTicks:forward.physicsTicks});
   assert.ok(forwardSpeed > 5, "W should accelerate; got " + forwardSpeed + " km/h");
   assert.ok(forward.position.z < start.position.z - 1, "W should move the car forward along the road");
 
