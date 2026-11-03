@@ -24,7 +24,10 @@ try {
 
   // Keyboard acceleration.
   await page.keyboard.down("w");
-  await page.waitForTimeout(950);
+  await page.waitForTimeout(200);
+  console.log("DEBUG while W held:", await page.evaluate(() => window.__turboCityDebug?.()));
+  await page.waitForTimeout(1000);
+  console.log("DEBUG after W hold:", await page.evaluate(() => window.__turboCityDebug?.()));
   await page.keyboard.up("w");
   const accelerated = Number(await page.locator("#speed").innerText());
   assert.ok(accelerated > 5, "W should accelerate the car; got " + accelerated + " km/h");
