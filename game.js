@@ -958,7 +958,7 @@ function updatePhysics(dt) {
   for(const t of world.traffic) {
     const dx=player.position.x-t.group.position.x;
     const dz=player.position.z-t.group.position.z;
-    if(dx*dx+dz*dz<8.5) {
+    if(dx*dx+dz*dz<18.0) {
       player.position.copy(old);world.velocity.multiplyScalar(-.18);toast("TRAFFIC CONTACT",.8);
     }
   }
@@ -1070,6 +1070,19 @@ function drawMiniMap() {
   for(const s of world.stars)if(s.active) {
     const x=(s.group.position.x+600)/1200*w,y=(s.group.position.z+600)/1200*h;
     ctx.fillStyle="#ffc654";ctx.beginPath();ctx.arc(x,y,2.7,0,Math.PI*2);ctx.fill();
+  }
+  // Highlight the next race checkpoint on the map so the route is always readable.
+  if(world.raceActive && world.gates[world.raceIndex]) {
+    const gate=world.gates[world.raceIndex].position;
+    const gx=(gate.x+600)/1200*w,gy=(gate.z+600)/1200*h;
+    const px=player?(player.position.x+600)/1200*w:0;
+    const py=player?(player.position.z+600)/1200*h:0;
+    ctx.save();
+    ctx.setLineDash([5,5]);ctx.strokeStyle="#30ddf5";ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(gx,gy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="#ffbd49";ctx.strokeStyle="#1b1c20";ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(gx,gy,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.restore();
   }
   if(player) {
     const x=(player.position.x+600)/1200*w,y=(player.position.z+600)/1200*h;
