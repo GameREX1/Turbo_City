@@ -67,7 +67,7 @@ export function createActivityModule({ scene, world, material, box, cylinder, si
     core.scale.set(1.12,1.12,1.12);core.castShadow=true;group.add(core);
     const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05,.045,7,28),new THREE.MeshStandardMaterial({color:0xfff1b2,emissive:0xffc44e,emissiveIntensity:1.0}));
     ring.rotation.x=Math.PI/2;ring.position.y=-.08;group.add(ring);
-    const glow=new THREE.PointLight(0xffc44c,.7,9);glow.position.y=.2;group.add(glow);
+    // Emissive materials provide the pickup highlight without a per-star real-time light.
     group.position.set(x,y,z);group.userData.baseY=y;group.userData.id=index;
     scene.add(group);world.stars.push({group,active:true});
   }
