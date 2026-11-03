@@ -334,9 +334,10 @@ function buildStreetFurniture() {
 function buildCity() {
   const windowMatrices={cool:[],warm:[]};
   let seed=71;
+  const parkBlocks=new Set(["-2,1","-3,-1","1,1"]);
   for(let gx=-3;gx<=2;gx++) for(let gz=-3;gz<=2;gz++) {
-    // Reserve one full block for the stunt playground.
-    if(gx===2 && gz===-3) continue;
+    // Keep the park blocks and skill course open.
+    if((gx===2 && gz===-3) || parkBlocks.has(gx+","+gz)) continue;
     const cx=gx*ROAD_SPACING+ROAD_SPACING/2;
     const cz=gz*ROAD_SPACING+ROAD_SPACING/2;
     const n=1+(seed%3);
@@ -430,7 +431,7 @@ function buildCollectibles() {
     [-260,2.2,-240],[-160,2.2,-300],[0,2.2,-270],[160,2.2,-300],[270,2.2,-160],
     [300,2.2,0],[160,2.2,160],[0,2.2,260],[-160,2.2,280],[-300,2.2,160],
     [-390,2.2,-160],[390,2.2,160],[-390,2.2,390],[390,2.2,-260],
-    [400,12,-390],[400,18,-430],[372,9,-420],[428,9,-420],
+    [400,2.2,-390],[400,2.2,-430],[372,2.2,-420],[428,2.2,-420],
     [240,2.2,-420],[0,2.2,-440],[-240,2.2,420],[-420,2.2,0],
     [230,2.2,420],[-80,2.2,120],[80,2.2,-120],[320,2.2,320]
   ];
@@ -843,7 +844,7 @@ function updatePhysics(dt) {
   // Keep lateral response predictable: grip is applied every frame, not only while steering.
   lateralSpeed=world.velocity.dot(right);
   world.velocity.addScaledVector(right,-lateralSpeed*Math.min(1,spec.grip*dt));
-  const drag=throttle?.9988:.991;
+  const drag=throttle ? .9997 : .9977;
   world.velocity.multiplyScalar(Math.pow(drag,dt*60));
   let speedAlong=world.velocity.dot(forward);
   if(speedAlong>maxForward)world.velocity.addScaledVector(forward,maxForward-speedAlong);
@@ -921,7 +922,6 @@ function updatePhysics(dt) {
   updateHUD(speedAlong);
 }
 
-function
 function updateRace() {
   if(!world.raceActive || !world.gates[world.raceIndex])return;
   const gate=world.gates[world.raceIndex];
