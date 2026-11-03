@@ -372,8 +372,8 @@ function tick() {
   const dt=Math.min(clock.getDelta(),.04);
   world.frameCount++;
   world.lastFrameDt=dt;
-  activitySystem.animateCollectibles(dt);
   if(world.started && !world.paused) {
+    activitySystem.animateCollectibles(dt);
     drivingSystem.updatePhysics(dt);
     trafficSystem.updateTraffic(dt);
     cameraSystem.updateCamera(dt);
@@ -383,7 +383,6 @@ function tick() {
     previewTime+=dt*.18;
     camera.position.set(Math.sin(previewTime)*13,6.4,Math.cos(previewTime)*15);
     camera.lookAt(0,0,0);
-    trafficSystem.updateTraffic(dt*.25);
     const wheels=vehicleSystem.getWheels();
     if(wheels.length)wheels.forEach(w=>{if(w.mesh)w.mesh.rotation.x+=dt*.08;});
   }
