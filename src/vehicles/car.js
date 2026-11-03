@@ -97,6 +97,11 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     rim.position.x=side*.012;
     pivot.add(rim);
 
+    const sidewallRing=new THREE.Mesh(new THREE.TorusGeometry(radius*.86,.014,5,32),rubber);
+    sidewallRing.rotation.y=Math.PI/2;
+    sidewallRing.position.x=side*.18;
+    pivot.add(sidewallRing);
+
     const outerRing=new THREE.Mesh(new THREE.TorusGeometry(radius*.56,radius*.055,8,32),rimMat);
     outerRing.rotation.y=Math.PI/2;
     outerRing.position.x=side*.19;
@@ -118,6 +123,15 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     pivot.add(disc);
     const caliper=box(pivot,.095,radius*.42,.12,brakeMat,side*.16,radius*.10,radius*.42,false);
     caliper.rotation.x=.12;
+
+    const lugMat=material(0xd5dbe0,.24,.9);
+    for(let lug=0;lug<5;lug++){
+      const angle=lug*Math.PI*2/5;
+      const nut=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.05,8),lugMat);
+      nut.rotation.z=Math.PI/2;
+      nut.position.set(side*.215,Math.cos(angle)*radius*.24,Math.sin(angle)*radius*.24);
+      pivot.add(nut);
+    }
 
     vehicleWheels.push({wheel:tire,pivot,front});
   }
@@ -166,7 +180,7 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
       color:spec.color,metalness:.42,roughness:.245,clearcoat:.82,clearcoatRoughness:.11,envMapIntensity:1.35
     });
     const glass=new THREE.MeshPhysicalMaterial({
-      color:0x263845,metalness:.22,roughness:.12,transparent:true,opacity:.9,clearcoat:.9,clearcoatRoughness:.08
+      color:0x263845,metalness:.22,roughness:.12,transparent:true,opacity:.56,clearcoat:.9,clearcoatRoughness:.08
     });
     const black=material(0x0b1119,.35,.52);
     const carbon=material(0x171e28,.28,.72);
@@ -210,11 +224,60 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
       box(root,.19,.12,.26,paint,side*(hw+.10),base-.12,frontBase*.63,false);
       box(root,.13,.13,.25,carbon,side*(hw+.08),.58,-L*.13,false);
       box(root,.085,.075,.20,chrome,side*(hw+.11),.83,L*.025,false);
+      box(root,.22,.13,.22,black,side*(hw+.13),.93,-L*.17,false);
+      box(root,.17,.09,.045,chrome,side*(hw+.14),.94,-L*.17,false);
       // Door seams, handles and low side sills.
       box(root,.018,.34,L*.22,black,side*(hw*.985),.73,L*.085,false);
       box(root,.17,.035,.055,chrome,side*(hw+.012),.91,L*.05,false);
       box(root,.10,.12,L*.54,carbon,side*(hw*.94),.43,0,false);
     }
+
+    // Visible cockpit: dashboard, two seats, headrests, center tunnel,
+    // steering wheel, instrument display and seat belts behind the tinted glass.
+    const cabinFloor=material(0x171b20,.96,.02);
+    const leather=material(spec.kind==="landcruiser"?0x292521:0x17191d,.84,.03);
+    const leatherTrim=material(0x3b3530,.78,.04);
+    const dashMat=material(0x10161d,.72,.08);
+    const displayMat=new THREE.MeshStandardMaterial({
+      color:0x14252c,emissive:0x1e91a3,emissiveIntensity:.38,roughness:.35
+    });
+    box(root,cabW*1.7,.12,rearBase-frontBase-.16,cabinFloor,0,base-.16,(frontBase+rearBase)*.5,false);
+    box(root,cabW*1.76,.22,.24,dashMat,0,base+.09,frontBase+.22,false);
+    box(root,cabW*.72,.13,.34,leatherTrim,0,base+.01,frontBase+.49,false);
+    box(root,.28,.18,.76,dashMat,0,base+.015,.28,false);
+    box(root,.20,.045,.28,displayMat,0,base+.13,.03,false);
+    box(root,.12,.11,.15,chrome,0,base+.10,.34,false);
+    for(const side of [-1,1]){
+      const seatX=side*cabW*.46;
+      const seatZ=.38;
+      box(root,.48,.17,.58,leather,seatX,base-.015,seatZ,false);
+      const seatBack=box(root,.48,.69,.18,leather,seatX,base+.34,seatZ+.19,false);
+      seatBack.rotation.x=.10;
+      box(root,.32,.20,.18,leatherTrim,seatX,base+.78,seatZ+.25,false);
+      // Seat-belt webbing and buckle.
+      const belt=box(root,.045,.62,.035,leatherTrim,seatX+side*.17,base+.36,seatZ+.10,false);
+      belt.rotation.z=side*.22;
+      box(root,.075,.055,.055,chrome,seatX+side*.14,base+.10,seatZ-.08,false);
+      // Door armrest and inner pull.
+      box(root,.12,.11,.72,dashMat,side*cabW*.88,base-.02,.30,false);
+      box(root,.08,.035,.18,chrome,side*cabW*.89,base+.06,.13,false);
+    }
+    const steeringWheel=new THREE.Mesh(new THREE.TorusGeometry(.225,.034,8,28),black);
+    steeringWheel.rotation.y=Math.PI/2;
+    steeringWheel.position.set(-cabW*.49,base+.06,frontBase+.54);
+    root.add(steeringWheel);
+    const steeringHub=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.09,16),chrome);
+    steeringHub.rotation.z=Math.PI/2;
+    steeringHub.position.copy(steeringWheel.position);
+    root.add(steeringHub);
+    const steeringColumn=new THREE.Mesh(new THREE.CylinderGeometry(.045,.055,.38,10),black);
+    steeringColumn.rotation.x=Math.PI/2;
+    steeringColumn.position.set(-cabW*.49,base-.015,frontBase+.36);
+    root.add(steeringColumn);
+    box(root,.38,.15,.06,displayMat,-cabW*.49,base+.25,frontBase+.30,false);
+    // A small rear-view mirror and roof-mounted console complete the cabin.
+    box(root,.22,.055,.07,black,0,top-.035,frontTop+.14,false);
+    box(root,.12,.055,.05,chrome,0,top-.08,frontTop+.14,false);
 
     // Roof, windshield surround and subtle hood/roof contour lines.
     box(root,cabW*1.78,.09,roofLength,paint,0,top+.018,(frontTop+rearTop)*.5,false);
