@@ -53,6 +53,27 @@ const world = {
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false
 };
 
+if(isSmokeMode) {
+  // Keep automated high-speed steering runs on a clear road, away from random traffic.
+  window.__turboCityPrepareHighSpeed = () => {
+    if(!player)return;
+    player.position.set(0,0,-220);
+    player.rotation.set(0,0,0);
+    world.prevPosition.copy(player.position);
+    world.safePosition.copy(player.position);
+    world.yaw=0;
+    world.safeYaw=0;
+    world.velocity.set(0,0,0);
+    world.speed=0;
+    world.safeTimer=0;
+    world.traffic.forEach((record,index)=>{
+      record.x=5000+index*25;
+      record.z=5000;
+      record.group.position.set(record.x,.02,record.z);
+    });
+  };
+}
+
 let renderer, composer, scene, camera, clock, player, pmrem, sunLight;
 let previewTime=0, loadingDone=false, selectedQuality="balanced";
 let currentCarIndex=0;
