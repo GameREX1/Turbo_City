@@ -17,14 +17,17 @@ import { createDrivingModule } from "./src/systems/driving.js";
 import { createCameraModule } from "./src/systems/camera.js";
 
 const $ = (id) => document.getElementById(id);
-const isSmokeMode = new URLSearchParams(window.location.search).has("ciDebug");
+const queryFlags = new URLSearchParams(window.location.search);
+const isSmokeMode = queryFlags.has("ciDebug");
+const isVisualTestMode = queryFlags.has("ciVisual");
+const isTestMode = isSmokeMode || isVisualTestMode;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const damp = (a, b, speed, dt) => THREE.MathUtils.damp(a, b, speed, dt);
 const rand = (min, max) => min + Math.random() * (max - min);
 const input = { gas:false, brake:false, reverse:false, left:false, right:false };
 const keys = Object.create(null);
 // Optional browser-test diagnostics; disabled for normal visitors.
-if (new URLSearchParams(window.location.search).has("ciDebug")) {
+if (isTestMode) {
   window.__turboCityDebug = () => {
     const forward = new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
     return {
@@ -90,7 +93,7 @@ function cylinder(parent, radiusTop, radiusBottom, height, mat, x,y,z, segments=
 
 function createComposer() {
   if(composer){composer.dispose();composer=null;}
-  if(isSmokeMode || !getQualityPreset(selectedQuality).bloom || !renderer || !camera || !scene)return;
+  if(isTestMode || !getQualityPreset(selectedQuality).bloom || !renderer || !camera || !scene)return;
   try {
     composer=new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene,camera));
@@ -104,9 +107,9 @@ function createComposer() {
 function applyQualitySettings() {
   if(!renderer)return;
   const quality=getQualityPreset(selectedQuality);
-  renderer.setPixelRatio(isSmokeMode?0.5:Math.min(window.devicePixelRatio||1,quality.pixelRatio));
-  renderer.setSize(isSmokeMode?320:window.innerWidth,isSmokeMode?200:window.innerHeight);
-  renderer.shadowMap.enabled=!isSmokeMode&&quality.shadows;
+  renderer.setPixelRatio(isTestMode?0.5:Math.min(window.devicePixelRatio||1,quality.pixelRatio));
+  renderer.setSize(isTestMode?320:window.innerWidth,isTestMode?200:window.innerHeight);
+  renderer.shadowMap.enabled=!isTestMode&&quality.shadows;
   if(sunLight) {
     sunLight.shadow.mapSize.set(quality.shadowMapSize,quality.shadowMapSize);
     if(sunLight.shadow.map)sunLight.shadow.map.dispose();
@@ -172,18 +175,18 @@ function makeSky() {
 function buildRenderer() {
   const quality=getQualityPreset(selectedQuality);
   renderer = new THREE.WebGLRenderer({
-    antialias: quality.antialias,
+    antialias: !isTestMode&&quality.antialias,
     alpha: false,
     powerPreference: "high-performance",
     stencil: false,
     depth: true
   });
-  renderer.setPixelRatio(isSmokeMode ? 0.5 : Math.min(window.devicePixelRatio || 1, quality.pixelRatio));
-  renderer.setSize(isSmokeMode ? 320 : window.innerWidth,isSmokeMode ? 200 : window.innerHeight);
+  renderer.setPixelRatio(isTestMode ? 0.5 : Math.min(window.devicePixelRatio || 1, quality.pixelRatio));
+  renderer.setSize(isTestMode ? 320 : window.innerWidth,isTestMode ? 200 : window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  renderer.shadowMap.enabled = !isSmokeMode && quality.shadows;
+  renderer.shadowMap.enabled = !isTestMode && quality.shadows;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $("game").appendChild(renderer.domElement);
 
@@ -373,8 +376,8 @@ function onResize() {
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
   const quality=getQualityPreset(selectedQuality);
-  renderer.setPixelRatio(isSmokeMode?0.5:Math.min(window.devicePixelRatio||1,quality.pixelRatio));
-  renderer.setSize(isSmokeMode?320:window.innerWidth,isSmokeMode?200:window.innerHeight);
+  renderer.setPixelRatio(isTestMode?0.5:Math.min(window.devicePixelRatio||1,quality.pixelRatio));
+  renderer.setSize(isTestMode?320:window.innerWidth,isTestMode?200:window.innerHeight);
   if(composer)composer.setSize(window.innerWidth,window.innerHeight);
 }
 
@@ -387,7 +390,7 @@ async function init() {
     buildingSystem=createBuildingModule({scene,world,ROAD_SPACING,material,box,cylinder,rand});
     activitySystem=createActivityModule({scene,world,material,box,cylinder,signTexture:buildingSystem.signTexture,toast,getPlayer:()=>player});
     trafficSystem=createTrafficModule({scene,world,material,box,rand});
-    vehicleSystem=createVehicleModule({scene,material,box,cylinder,cars,getCurrentCarIndex:()=>currentCarIndex,isSmokeMode,setLoading});
+    vehicleSystem=createVehicleModule({scene,material,box,cylinder,cars,getCurrentCarIndex:()=>currentCarIndex,isSmokeMode:isTestMode,setLoading});
     controlSystem=createControlsModule({input,keys,world,recoverCar,toggleCamera,pauseGame});
     drivingSystem=createDrivingModule({world,cars,getCurrentCarIndex:()=>currentCarIndex,getPlayer:()=>player,vehicle:vehicleSystem,getReadInput:()=>controlSystem.readInput,toast,damp,clamp,collectStars:activitySystem.collectStars,$});
     cameraSystem=createCameraModule({world,getPlayer:()=>player,getCamera:()=>camera,ROAD_SPACING,clamp,damp,$});
