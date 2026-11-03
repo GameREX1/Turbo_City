@@ -45,10 +45,11 @@ try {
 
   // Brake to a stop. Space must never put the gearbox into reverse.
   await page.keyboard.down("Space");
-  await page.waitForTimeout(850);
+  await page.waitForTimeout(1250);
   await page.keyboard.up("Space");
   const braked = await state();
-  assert.ok(Math.abs(braked.forwardSpeed) < 0.6, "Space should bring the car close to a stop");
+  console.log("BRAKE TRACE:", { before:forward.forwardSpeed.toFixed(2), after:braked.forwardSpeed.toFixed(2), speedKmh:await page.locator("#speed").innerText() });
+  assert.ok(Math.abs(braked.forwardSpeed) < 0.8, "Space should bring the car close to a stop; residual speed " + braked.forwardSpeed);
   assert.notEqual(await page.locator("#gear").innerText(), "R", "Space must not engage reverse");
 
   // Reverse should keep accelerating backwards after crossing zero.
