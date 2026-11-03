@@ -97,7 +97,7 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     rim.position.x=side*.012;
     pivot.add(rim);
 
-    const sidewallRing=new THREE.Mesh(new THREE.TorusGeometry(radius*.86,.014,5,32),rubber);
+    const sidewallRing=new THREE.Mesh(new THREE.TorusGeometry(radius*.86,.014,5,32),tireMat);
     sidewallRing.rotation.y=Math.PI/2;
     sidewallRing.position.x=side*.18;
     pivot.add(sidewallRing);
