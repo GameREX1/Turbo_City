@@ -114,6 +114,45 @@ try {
   assert.ok(Math.hypot(recovered.velocity.x, recovered.velocity.z) < 0.05, "R should stop the car");
   assert.equal(await page.locator("#speed").innerText(), "000", "recovery should reset speed");
 
+  // Dedicated high-speed steering test: reach 270+ km/h, then check that
+  // both the visible car body and chase camera follow the physics heading.
+  await page.keyboard.down("w");
+  await page.waitForFunction(
+    () => Number(document.querySelector("#speed")?.innerText || 0) >= 270,
+    null,
+    { timeout: 12000, polling: 100 }
+  );
+  const highSpeedStart = await state();
+  await page.keyboard.down("a");
+  await page.waitForTimeout(900);
+  await page.keyboard.up("a");
+  const highSpeedLeft = await state();
+  assert.ok(highSpeedLeft.forwardSpeed > 65, "car should remain at high speed during left turn");
+  assert.ok(highSpeedLeft.yaw < highSpeedStart.yaw - 0.12, "A should turn physics heading left at 270+ km/h");
+  assert.ok(Math.abs(highSpeedLeft.playerYaw + highSpeedLeft.yaw) < 1e-6, "visible car body must face the same direction as its physics heading on left turn");
+
+  await page.keyboard.down("d");
+  await page.waitForTimeout(900);
+  await page.keyboard.up("d");
+  const highSpeedRight = await state();
+  await page.keyboard.up("w");
+  assert.ok(highSpeedRight.yaw > highSpeedLeft.yaw + 0.12, "D should turn physics heading right at 270+ km/h");
+  assert.ok(Math.abs(highSpeedRight.playerYaw + highSpeedRight.yaw) < 1e-6, "visible car body must face the same direction as its physics heading on right turn");
+  const cameraOffsetX = highSpeedRight.cameraPosition.x - highSpeedRight.position.x;
+  const cameraOffsetZ = highSpeedRight.cameraPosition.z - highSpeedRight.position.z;
+  const cameraOffsetLength = Math.hypot(cameraOffsetX, cameraOffsetZ);
+  const expectedCameraX = -Math.sin(highSpeedRight.yaw);
+  const expectedCameraZ = Math.cos(highSpeedRight.yaw);
+  const cameraAlignment = (cameraOffsetX * expectedCameraX + cameraOffsetZ * expectedCameraZ) / cameraOffsetLength;
+  assert.ok(cameraAlignment > 0.8, "chase camera should remain behind the car after high-speed turns; alignment " + cameraAlignment);
+  console.log("HIGH-SPEED STEERING TRACE:", {
+    speedKmh: Math.round(highSpeedRight.forwardSpeed * 3.6),
+    leftYawDelta: (highSpeedLeft.yaw - highSpeedStart.yaw).toFixed(3),
+    rightYawDelta: (highSpeedRight.yaw - highSpeedLeft.yaw).toFixed(3),
+    bodyHeadingMatches: Math.abs(highSpeedRight.playerYaw + highSpeedRight.yaw) < 1e-6,
+    cameraAlignment: cameraAlignment.toFixed(3)
+  });
+
   // Check mobile touch layout and all five drive controls.
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.locator("#touch-controls").isVisible(), true, "mobile controls should be visible");
