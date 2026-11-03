@@ -87,3 +87,7 @@ GitHub Pages hosts the browser build; it does not execute C++ or Unity C# source
 The seven selectable garage vehicles are handcrafted procedural Three.js models with per-car body profiles, glazing, lighting, aero details and four animated wheels. They are original approximations inspired by the named vehicle classes, not licensed factory CAD meshes or photogrammetry scans.
 
 Three.js and its example loaders are loaded from jsDelivr. Google Fonts are loaded from Google Fonts. An internet connection is required for these external resources.
+
+## Vehicle asset credits
+
+- **Spectral GT RS**: CC0 1.0 public-domain vehicle asset by JaronKBragg7337, used as an additional detailed garage vehicle. Source: https://github.com/JaronKBragg7337/spectral-gt-rs
