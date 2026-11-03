@@ -10,18 +10,7 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
   }
 
-  function verticalSignTexture(text, accent="#30ddf5") {
-    const c=document.createElement("canvas");c.width=160;c.height=512;
-    const ctx=c.getContext("2d");
-    ctx.fillStyle="#07101eee";ctx.fillRect(0,0,c.width,c.height);
-    ctx.strokeStyle=accent;ctx.lineWidth=8;ctx.strokeRect(7,7,146,498);
-    ctx.shadowColor=accent;ctx.shadowBlur=20;ctx.fillStyle=accent;
-    ctx.font="900 42px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
-    const chars=String(text).split("").slice(0,8);
-    chars.forEach((ch,i)=>ctx.fillText(ch,80,72+i*51));
-    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
-  }
-  
+
   function addCityBuilding(x,z,w,d,h,index,windowMatrices,batches) {
     // Buildings share materials and are submitted through instanced meshes.
     // The individual collision rectangles remain in world.buildings.
@@ -77,27 +66,13 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       batches.rooftop.push({x:ux,y:h+1.05,z:uz,sx:w*.15,sy:1.5,sz:d*.18});
       batches.ventCaps.push({x:ux,y:h+1.9,z:uz,sx:w*.1,sy:.18,sz:d*.12});
     }
-    if(index%4===0 && h>42) {
-      const accents=["#30ddf5","#ff72d2","#ffd36a"];
-      const accent=accents[index%accents.length];
-      const labels=["TURBO","GAMERAX","RAX","NEON"];
-      const sign=new THREE.Mesh(
-        new THREE.PlaneGeometry(3.8,9.5),
-        new THREE.MeshBasicMaterial({map:verticalSignTexture(labels[index%labels.length],accent),side:THREE.DoubleSide,toneMapped:false})
-      );
-      sign.position.set(x+w*.32,h*.58,z+d/2+.18);
-      sign.renderOrder=2;
-      scene.add(sign);
-      const glow=new THREE.Mesh(new THREE.BoxGeometry(4.15,9.85,.16),new THREE.MeshBasicMaterial({color:0x13253d,transparent:true,opacity:.92}));
-      glow.position.set(x+w*.32,h*.58,z+d/2+.08);
-      scene.add(glow);
-    }
+    // Street-level shopfronts use simple neutral sign bands, not glowing neon.
   }
   
   function buildWindows(windowMatrices) {
     const geometry=new THREE.BoxGeometry(1,1,.08);
-    const coolMat=new THREE.MeshStandardMaterial({color:0x76c9f2,roughness:.22,metalness:.58,emissive:0x236fa7,emissiveIntensity:.42});
-    const warmMat=new THREE.MeshStandardMaterial({color:0xffc5a0,roughness:.24,metalness:.28,emissive:0xff6eb9,emissiveIntensity:.48});
+    const coolMat=new THREE.MeshPhysicalMaterial({color:0x435d70,roughness:.24,metalness:.32,clearcoat:.8,clearcoatRoughness:.12,emissive:0x101b22,emissiveIntensity:.025});
+    const warmMat=new THREE.MeshStandardMaterial({color:0xe2c8a1,roughness:.5,metalness:.06,emissive:0x60472a,emissiveIntensity:.08});
     for(const [items,mat] of [[windowMatrices.cool,coolMat],[windowMatrices.warm,warmMat]]) {
       const inst=new THREE.InstancedMesh(geometry,mat,items.length);
       const obj=new THREE.Object3D();
@@ -117,8 +92,8 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     batches.secondary.push({x:x+.7*scale,y:4.7*scale,z:z+.4*scale,scale});
   }
   function addTreeInstances(batches) {
-    const trunkMat=material(0x69513b,1);
-    const leafMats=[material(0x2f6f4b,1),material(0x3f8258,1),material(0x477d51,1)];
+    const trunkMat=material(0x66513d,.98,.01);
+    const leafMats=[material(0x47664a,.96,.01),material(0x59744e,.96,.01),material(0x3e5e45,.98,.01)];
     const add=(geometry,mat,items)=>{
       if(!items.length)return;
       const mesh=new THREE.InstancedMesh(geometry,mat,items.length);
@@ -133,9 +108,9 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       mesh.castShadow=false;mesh.receiveShadow=false;scene.add(mesh);
     };
     add(new THREE.CylinderGeometry(.22,.34,3.6,7),trunkMat,batches.trunks);
-    const crownGeometry=new THREE.IcosahedronGeometry(2.35,2);
+    const crownGeometry=new THREE.SphereGeometry(2.35,14,10);
     batches.crowns.forEach((items,i)=>add(crownGeometry,leafMats[i],items));
-    add(new THREE.IcosahedronGeometry(1.45,1),leafMats[1],batches.secondary);
+    add(new THREE.SphereGeometry(1.45,12,9),leafMats[1],batches.secondary);
   }
   function buildParks() {
     const parkMat=material(0x58765a,.98);
@@ -187,17 +162,43 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       bodies:Array.from({length:7},()=>[]),plinths:[],roofs:[],rooftop:[],ventCaps:[],
       facadeVertical:[],facadeHorizontal:[]
     };
-    const colors=[0x354968,0x405879,0x4a527f,0x324f70,0x605178,0x3c607d,0x4a5b86];
+    // Subtle concrete/stucco facade texture: fine mineral grain and panel joints.
+    const facadeCanvas=document.createElement("canvas");
+    facadeCanvas.width=facadeCanvas.height=512;
+    const facadeCtx=facadeCanvas.getContext("2d");
+    facadeCtx.fillStyle="#a4a6a4";facadeCtx.fillRect(0,0,512,512);
+    let facadeSeed=9281;
+    const facadeRandom=()=>{facadeSeed=(1664525*facadeSeed+1013904223)>>>0;return facadeSeed/4294967296;};
+    for(let i=0;i<19000;i++){
+      const shade=facadeRandom()>.5?"#ffffff":"#30343a";
+      facadeCtx.globalAlpha=.025+facadeRandom()*.055;
+      facadeCtx.fillStyle=shade;
+      facadeCtx.fillRect(facadeRandom()*512,facadeRandom()*512,1+facadeRandom()*2,1+facadeRandom()*2);
+    }
+    facadeCtx.globalAlpha=1;
+    for(let y=0;y<=512;y+=64){
+      facadeCtx.fillStyle="#777d80";facadeCtx.fillRect(0,y,512,2);
+      facadeCtx.fillStyle="#d3d1c9";facadeCtx.fillRect(0,y+2,512,2);
+    }
+    for(let x=0;x<=512;x+=128){
+      facadeCtx.fillStyle="#85898a";facadeCtx.fillRect(x,0,2,512);
+    }
+    const facadeMap=new THREE.CanvasTexture(facadeCanvas);
+    facadeMap.wrapS=facadeMap.wrapT=THREE.RepeatWrapping;
+    facadeMap.repeat.set(2,3);
+    facadeMap.colorSpace=THREE.SRGBColorSpace;
+    facadeMap.anisotropy=Math.min(4,8);
+    const colors=[0xb0b2ae,0x929a9f,0xb7b4ac,0x818b91,0xa9a39a,0x8e9898,0xb8b9b4];
     const bodyMaterials=colors.map(color=>new THREE.MeshStandardMaterial({
-      color,roughness:.3,metalness:.48,emissive:0x101d38,emissiveIntensity:.18
+      color,map:facadeMap,roughness:.72,metalness:.12,bumpMap:facadeMap,bumpScale:.025
     }));
     const shared={
-      plinth:material(0x202d43,.62,.42),
-      roof:material(0x26354b,.42,.5),
-      rooftop:material(0x37465e,.58,.42),
-      ventCap:material(0x172337,.38,.62),
-      facade:material(0x172942,.34,.62),
-      facadeBand:material(0x52617d,.38,.58)
+      plinth:material(0x777b7a,.86,.06),
+      roof:material(0x656d70,.78,.12),
+      rooftop:material(0x747a7a,.8,.08),
+      ventCap:material(0x454b4e,.72,.16),
+      facade:material(0x666e70,.64,.18),
+      facadeBand:material(0xb3b2aa,.72,.08)
     };
     let seed=71;
     const parkBlocks=new Set(["-2,1","-3,-1","1,1"]);
