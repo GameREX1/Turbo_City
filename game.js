@@ -40,6 +40,7 @@ if (isTestMode) {
       yaw:world.yaw, playerYaw:player?.rotation.y,
       cameraPosition:camera?{x:camera.position.x,y:camera.position.y,z:camera.position.z}:null,
       started:world.started, paused:world.paused,
+      playerModel:player?.name||null, carIndex:currentCarIndex,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
     };
   };
