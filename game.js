@@ -37,7 +37,7 @@ if (isTestMode) {
       position:player?{x:player.position.x,y:player.position.y,z:player.position.z}:null,
       safePosition:{x:world.safePosition.x,y:world.safePosition.y,z:world.safePosition.z},
       forwardSpeed:world.velocity.dot(forward),
-      yaw:world.yaw, started:world.started, paused:world.paused,
+      yaw:world.yaw, playerYaw:player?.rotation.y, started:world.started, paused:world.paused,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
     };
   };
@@ -246,7 +246,7 @@ function placeAtModeStart() {
   world.velocity.set(0,0,0);
   world.yaw=0;
   world.speed=0;world.lateral=0;world.distance=0;
-  player.rotation.set(0,world.yaw,0);
+  player.rotation.set(0,-world.yaw,0);
   if(world.mode==="sprint") {
     activitySystem.prepareRace();
     $("mission-title").textContent="CITY SPRINT";
@@ -315,7 +315,7 @@ function recoverCar() {
   world.velocity.set(0,0,0);
   world.speed=0;world.lateral=0;
   world.safeTimer=0;
-  player.rotation.set(0,world.safeYaw,0);
+  player.rotation.set(0,-world.safeYaw,0);
   toast("VEHICLE RECOVERED");
 }
 
