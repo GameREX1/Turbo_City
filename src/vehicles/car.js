@@ -29,9 +29,30 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   }
 
   function makeHull(spec,paint) {
-    const stations=profiles[spec.kind]||profiles.chiron;
+    const controlPoints=profiles[spec.kind]||profiles.chiron;
+    const stations=[];
+    // Interpolate profile stations so the body silhouette is smoothly rounded.
+    const segments=4;
+    for(let i=0;i<controlPoints.length-1;i++){
+      const p0=controlPoints[Math.max(0,i-1)];
+      const p1=controlPoints[i];
+      const p2=controlPoints[i+1];
+      const p3=controlPoints[Math.min(controlPoints.length-1,i+2)];
+      for(let step=0;step<segments;step++){
+        const t=step/segments,t2=t*t,t3=t2*t;
+        const row=[];
+        for(let axis=0;axis<4;axis++){
+          const value=.5*((2*p1[axis])+(-p0[axis]+p2[axis])*t+
+            (2*p0[axis]-5*p1[axis]+4*p2[axis]-p3[axis])*t2+
+            (-p0[axis]+3*p1[axis]-3*p2[axis]+p3[axis])*t3);
+          row.push(value);
+        }
+        stations.push(row);
+      }
+    }
+    stations.push(controlPoints[controlPoints.length-1]);
     const verts=[],indices=[];
-    const sides=28;
+    const sides=48;
     stations.forEach(station=>{
       const z=station[0]*spec.length;
       const halfWidth=station[1]*spec.width*.5;
@@ -104,19 +125,19 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     root.name="TurboCity_"+spec.kind;
 
     const paint=new THREE.MeshPhysicalMaterial({
-      color:spec.color,metalness:.58,roughness:.2,clearcoat:1,clearcoatRoughness:.055,envMapIntensity:1.65
+      color:spec.color,metalness:.42,roughness:.245,clearcoat:.82,clearcoatRoughness:.11,envMapIntensity:1.35
     });
     const glass=new THREE.MeshPhysicalMaterial({
-      color:0x122435,metalness:.18,roughness:.075,transparent:true,opacity:.93,clearcoat:1,clearcoatRoughness:.04
+      color:0x263845,metalness:.22,roughness:.12,transparent:true,opacity:.9,clearcoat:.9,clearcoatRoughness:.08
     });
     const black=material(0x0b1119,.35,.52);
     const carbon=material(0x171e28,.28,.72);
     const chrome=material(0xb8c8d4,.2,.92);
     const rubber=material(0x090d12,.94,.04);
     const brake=material(spec.kind==="svj"?0xd1a44e:0xc34b3e,.38,.3);
-    const headMat=new THREE.MeshStandardMaterial({color:0xf4fdff,emissive:0x9ddfff,emissiveIntensity:2.35,roughness:.2});
-    const tailMat=new THREE.MeshStandardMaterial({color:0xff2847,emissive:0xe00e34,emissiveIntensity:1.65,roughness:.28});
-    const accent=new THREE.MeshStandardMaterial({color:spec.color,metalness:.48,roughness:.24,emissive:spec.color,emissiveIntensity:.16});
+    const headMat=new THREE.MeshStandardMaterial({color:0xf4fdff,emissive:0xd8ecff,emissiveIntensity:.85,roughness:.28});
+    const tailMat=new THREE.MeshStandardMaterial({color:0xff3949,emissive:0x7d1020,emissiveIntensity:.55,roughness:.36});
+    const accent=new THREE.MeshStandardMaterial({color:spec.color,metalness:.38,roughness:.3,emissive:spec.color,emissiveIntensity:.025});
 
     const L=spec.length,W=spec.width,front=-L*.5,rear=L*.5;
     const hw=W*.5,ride=spec.kind==="landcruiser"?.48:.36;
