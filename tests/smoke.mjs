@@ -31,6 +31,14 @@ try {
   ];
   for (const expectedName of expectedGarageCars) {
     assert.equal(await page.locator("#car-name").innerText(), expectedName, "garage should select " + expectedName);
+    if (expectedName === "SPECTRAL GT RS") {
+      await page.waitForFunction(
+        () => window.__turboCityDebug?.().playerModel === "TurboCity_Spectral_GT_RS",
+        null,
+        { timeout: 15000, polling: 200 }
+      ).catch(() => {});
+      console.log("DETAILED VEHICLE ASSET TRACE:", await state());
+    }
     await page.locator("#next-car").click();
   }
   assert.equal(await page.locator("#car-name").innerText(), "BUGATTI CHIRON", "garage should cycle back to the first car");
