@@ -29,6 +29,11 @@ try {
   await page.locator("#prev-car").click();
   assert.equal(await page.locator("#car-name").innerText(), firstCar, "previous-car button should restore the first car");
 
+  await page.locator("#quality-select").selectOption("performance");
+  assert.equal(await page.locator("#quality-select").inputValue(), "performance", "Performance quality should be selectable");
+  await page.locator("#quality-select").selectOption("balanced");
+  assert.equal(await page.locator("#quality-select").inputValue(), "balanced", "Balanced quality should be selectable");
+
   await page.locator("#start-button").click();
   assert.equal(await page.locator("#hud").isVisible(), true, "HUD should appear after starting");
 
