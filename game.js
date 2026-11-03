@@ -479,9 +479,14 @@ function clearRaceGates() {
   for(const g of world.gates) scene.remove(g.group);
   world.gates=[];
 }
-function prepareRace() {
+function prepareRace(skillCourse=false) {
   clearRaceGates();
-  world.route=[
+  world.route=skillCourse?[
+    new THREE.Vector3(400,0,-378),
+    new THREE.Vector3(388,0,-412),
+    new THREE.Vector3(412,0,-446),
+    new THREE.Vector3(400,0,-480)
+  ]:[
     new THREE.Vector3(0,0,-72),
     new THREE.Vector3(150,0,-158),
     new THREE.Vector3(300,0,-158),
@@ -491,7 +496,7 @@ function prepareRace() {
   ];
   world.route.forEach((p,i)=>createGate(p,i,i===world.route.length-1));
   world.raceActive=true;world.raceStart=performance.now();world.raceIndex=0;
-  world.gates[0].active=true;
+  if(world.gates[0])world.gates[0].active=true;
 }
 function buildTraffic() {
   const colors=[0xe7e4d9,0x2c536f,0x9b3038,0x777f83,0xd2a34b,0x1d3433];
@@ -724,9 +729,10 @@ function placeAtModeStart() {
     $("mission-sub").textContent="Pass through every checkpoint";
     toast("SPRINT START — GO!");
   } else if(world.mode==="skill") {
-    clearRaceGates();world.raceActive=false;
+    world.obstacles.forEach(o=>{o.hit=false;o.group.visible=true;});
+    prepareRace(true);
     $("mission-title").textContent="SKILL COURSE";
-    $("mission-sub").textContent="Navigate the marked cone course";
+    $("mission-sub").textContent="Pass each checkpoint and avoid the cones";
     toast("SKILL COURSE — FOLLOW THE MARKERS");
   } else {
     clearRaceGates();world.raceActive=false;
@@ -914,7 +920,7 @@ function updatePhysics(dt) {
     if(dx*dx+dz*dz<(obstacle.radius+1.0)*(obstacle.radius+1.0)) {
       player.position.x=old.x;player.position.z=old.z;
       world.velocity.multiplyScalar(-.22);
-      obstacle.hit=true;scene.remove(obstacle.group);
+      obstacle.hit=true;obstacle.group.visible=false;
       toast("CONE HIT — TRY A CLEAN LINE",1.1);
     }
   }
@@ -958,9 +964,9 @@ function updateRace() {
       world.raceActive=false;
       const elapsed=(performance.now()-world.raceStart)/1000;
       world.score+=Math.max(250,Math.round(1200-elapsed*12));
-      $("mission-title").textContent="SPRINT COMPLETE";
+      $("mission-title").textContent=world.mode==="skill"?"SKILL COURSE COMPLETE":"SPRINT COMPLETE";
       $("mission-sub").textContent="Time " + elapsed.toFixed(2) + "s · Drive again to beat it";
-      toast("SPRINT COMPLETE — "+elapsed.toFixed(2)+"s",3);
+      toast((world.mode==="skill"?"COURSE COMPLETE — ":"SPRINT COMPLETE — ")+elapsed.toFixed(2)+"s",3);
     } else {
       world.gates[world.raceIndex].active=true;
       toast("CHECKPOINT "+world.raceIndex+"/"+world.gates.length,1);
@@ -977,7 +983,7 @@ function updateHUD(forwardSpeed) {
   $("star-count").textContent=world.collected;
   if(world.raceActive) {
     const t=((performance.now()-world.raceStart)/1000).toFixed(1);
-    $("mission-title").textContent="CITY SPRINT  "+world.raceIndex+"/"+world.gates.length;
+    $("mission-title").textContent=(world.mode==="skill"?"SKILL COURSE  ":"CITY SPRINT  ")+world.raceIndex+"/"+world.gates.length;
     $("mission-sub").textContent="TIME  "+t+"s";
   }
   if(world.toastTimer>0) {
@@ -1052,7 +1058,6 @@ function tick() {
     updateTraffic(dt);
     updateCamera(dt);
     drawMiniMap();
-    updateAudio();
   } else if(!world.started && player) {
     previewTime+=dt*.18;
     camera.position.set(Math.sin(previewTime)*13,6.4,Math.cos(previewTime)*15);
@@ -1060,6 +1065,7 @@ function tick() {
     updateTraffic(dt*.25);
     if(vehicleWheels.length)vehicleWheels.forEach(w=>{if(w.mesh)w.mesh.rotation.x+=dt*.08;});
   }
+  updateAudio();
   if(composer)composer.render();else renderer.render(scene,camera);
 }
 function onResize() {
