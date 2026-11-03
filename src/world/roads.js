@@ -17,20 +17,85 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
     scene.add(inst);
   }
   
+  function makeAsphaltTexture() {
+    const canvas=document.createElement("canvas");
+    canvas.width=canvas.height=512;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#34383b";
+    ctx.fillRect(0,0,512,512);
+    let seed=41027;
+    const random=()=>{
+      seed=(1664525*seed+1013904223)>>>0;
+      return seed/4294967296;
+    };
+    // Fine mineral grain and tiny aggregate specks.
+    for(let i=0;i<36000;i++){
+      const shade=random()>.52?"#777b7d":"#15191c";
+      ctx.globalAlpha=.035+random()*.11;
+      ctx.fillStyle=shade;
+      const size=.35+random()*1.5;
+      ctx.fillRect(random()*512,random()*512,size,size);
+    }
+    // Faded repair patches and oil-darkened areas.
+    for(let i=0;i<22;i++){
+      const x=random()*512,y=random()*512,w=18+random()*90,h=8+random()*42;
+      ctx.globalAlpha=.05+random()*.07;
+      ctx.fillStyle=random()>.5?"#171b1d":"#76797a";
+      ctx.beginPath();
+      ctx.ellipse(x,y,w,h,random()*Math.PI,0,Math.PI*2);
+      ctx.fill();
+    }
+    // Hairline cracks with irregular branches.
+    ctx.lineCap="round";
+    for(let i=0;i<18;i++){
+      let x=random()*512,y=random()*512;
+      ctx.globalAlpha=.18+random()*.16;
+      ctx.strokeStyle="#171a1c";
+      ctx.lineWidth=.5+random()*.8;
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      for(let k=0;k<5;k++){
+        x+=(random()-.5)*28;
+        y+=(random()-.5)*32;
+        ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    // Faint tyre scuffs.
+    for(let i=0;i<9;i++){
+      const y=random()*512;
+      ctx.globalAlpha=.045;
+      ctx.strokeStyle="#101416";
+      ctx.lineWidth=2+random()*3;
+      ctx.beginPath();
+      ctx.moveTo(random()*180,y);
+      ctx.bezierCurveTo(180,y-8,330,y+8,512,y+(random()-.5)*18);
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    const texture=new THREE.CanvasTexture(canvas);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.colorSpace=THREE.SRGBColorSpace;
+    texture.anisotropy=Math.min(4,8);
+    return texture;
+  }
+
   function buildGroundAndRoads() {
     const grass = makeNoiseTexture("#667653","#9aa17f",112);
-    const asphalt = makeNoiseTexture("#34383b","#9a9b95",41);
+    const asphalt = makeAsphaltTexture();
     grass.repeat.set(90,90);
     const grassMat = new THREE.MeshStandardMaterial({map:grass,roughness:1,metalness:0});
-    const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,roughness:.9,metalness:.025});
-    const roadMatH = new THREE.MeshStandardMaterial({map:asphalt.clone(),roughness:.9,metalness:.025});
+    const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,bumpMap:asphalt,bumpScale:.018,roughness:.86,metalness:.045});
+    const roadMatH = new THREE.MeshStandardMaterial({map:asphalt.clone(),bumpMap:asphalt.clone(),bumpScale:.018,roughness:.86,metalness:.045});
     roadMatV.map.repeat.set(2,48);
     roadMatH.map.repeat.set(48,2);
     roadMatH.map.needsUpdate = true;
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),grassMat);
     ground.rotation.x=-Math.PI/2; ground.position.y=-.14; ground.receiveShadow=true; scene.add(ground);
   
-    const concrete = material(0xa4a39a,.9,.025);
+    const concreteMap=makeNoiseTexture("#a4a39a","#d1cec3",85);
+    concreteMap.repeat.set(28,28);
+    const concrete = new THREE.MeshStandardMaterial({map:concreteMap,roughness:.96,metalness:.01});
     const yellow = material(0xe5c64f,.86,.02);
     const white = material(0xe8e6de,.85,.015);
     const roads = [];
@@ -75,6 +140,31 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
     addInstancedBoxes(new THREE.BoxGeometry(7.5,.026,.72),white,zebraH);
     addInstancedBoxes(new THREE.BoxGeometry(31,.035,.22),yellow,stopH);
     addInstancedBoxes(new THREE.BoxGeometry(.22,.035,31),yellow,stopV);
+
+    const manholes=[];
+    const drains=[];
+    for(let ix=0;ix<roads.length;ix++){
+      for(let iz=0;iz<roads.length;iz++){
+        if((ix+iz)%2===0)manholes.push({x:roads[ix]+10,y:.018,z:roads[iz]+10});
+      }
+    }
+    for(const p of roads)for(let z=-440;z<=440;z+=110){
+      drains.push({x:p+20.4,y:.026,z,sx:1.2,sy:.025,sz:.32});
+      drains.push({x:p-20.4,y:.026,z,sx:1.2,sy:.025,sz:.32});
+    }
+    const coverGeometry=new THREE.CylinderGeometry(.58,.58,.055,16);
+    const coverMaterial=material(0x51575a,.82,.35);
+    const covers=new THREE.InstancedMesh(coverGeometry,coverMaterial,manholes.length);
+    const coverDummy=new THREE.Object3D();
+    manholes.forEach((it,i)=>{
+      coverDummy.position.set(it.x,it.y,it.z);
+      coverDummy.updateMatrix();
+      covers.setMatrixAt(i,coverDummy.matrix);
+    });
+    covers.instanceMatrix.needsUpdate=true;
+    covers.castShadow=false;covers.receiveShadow=false;scene.add(covers);
+    const drainMaterial=material(0x303638,.92,.12);
+    addInstancedBoxes(new THREE.BoxGeometry(1,1,1),drainMaterial,drains);
   }
   
   
