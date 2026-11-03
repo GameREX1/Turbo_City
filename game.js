@@ -37,7 +37,9 @@ if (isTestMode) {
       position:player?{x:player.position.x,y:player.position.y,z:player.position.z}:null,
       safePosition:{x:world.safePosition.x,y:world.safePosition.y,z:world.safePosition.z},
       forwardSpeed:world.velocity.dot(forward),
-      yaw:world.yaw, playerYaw:player?.rotation.y, started:world.started, paused:world.paused,
+      yaw:world.yaw, playerYaw:player?.rotation.y,
+      cameraPosition:camera?{x:camera.position.x,y:camera.position.y,z:camera.position.z}:null,
+      started:world.started, paused:world.paused,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
     };
   };
