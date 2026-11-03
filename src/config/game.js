@@ -37,4 +37,9 @@ export const CARS = [
     color:0xe6bd27, top:290, accel:90, handling:87, power:28, grip:8.8, steer:1.76,
     length:4.78, width:1.92, wheelbase:2.75, wheelRadius:.41, bodyTop:1.02, cabinBase:.91, cabinTop:1.43, roofWidth:.74
   }
+  ,{
+    name:"SPECTRAL GT RS", type:"CC0 DETAILED SPORTS COUPE", kind:"chiron",
+    color:0x247ca5, top:340, accel:96, handling:94, power:33, grip:9.5, steer:1.9,
+    length:4.85, width:2.02, wheelbase:2.78, wheelRadius:.41, bodyTop:1.02, cabinBase:.91, cabinTop:1.46, roofWidth:.73
+  }
 ];
