@@ -131,31 +131,65 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
   
   function buildStreetFurniture() {
     const poleMat=material(0x343e46,.4,.78);
-    const bulbMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xa7e9ff,emissiveIntensity:2.8,roughness:.15});
+    const lampMat=new THREE.MeshStandardMaterial({
+      color:0xffffff,emissive:0xa7e9ff,emissiveIntensity:2.2,roughness:.25
+    });
+    const signalHeadMat=material(0x1b252c,.45,.25);
+    const signalBulbMats=[
+      new THREE.MeshStandardMaterial({color:0xff4a43,emissive:0xff4a43,emissiveIntensity:.55}),
+      new THREE.MeshStandardMaterial({color:0xffc44b,emissive:0xffc44b,emissiveIntensity:.55}),
+      new THREE.MeshStandardMaterial({color:0x53df8c,emissive:0x53df8c,emissiveIntensity:.55})
+    ];
+    const lampPoles=[],lampArms=[],lampHeads=[];
+    const signalPoles=[],signalHeads=[];
+    const signalBulbs=[[],[],[]];
     const roads=[];for(let n=-3;n<=3;n++)roads.push(n*ROAD_SPACING);
     let index=0;
+
+    // Static street furniture is batched: dozens of lamps no longer create
+    // hundreds of individual draw calls.
     for(const p of roads) for(let z=-480;z<=480;z+=96) {
       if(Math.abs(z-p)<30) continue;
       const side=(index++%2===0)?1:-1;
       const x=p+side*24;
-      cylinder(scene,.12,.17,8,poleMat,x,4,z,10);
-      const arm=box(scene,1.8,.12,.12,poleMat,x-side*.75,7.85,z,false);
-      const lamp=new THREE.Mesh(new THREE.BoxGeometry(.62,.18,.4),bulbMat);
-      lamp.position.set(x-side*1.45,7.72,z);scene.add(lamp);
+      lampPoles.push({x,y:4,z});
+      lampArms.push({x:x-side*.75,y:7.85,z});
+      lampHeads.push({x:x-side*1.45,y:7.72,z});
     }
-    // Traffic signals at selected downtown crossings.
+
+    // Batch the traffic-light poles, housings and each signal colour.
     for(const p of [-160,0,160]) for(const q of [-160,0,160]) {
       const x=p+21,z=q+21;
-      cylinder(scene,.12,.16,6.5,poleMat,x,3.25,z,9);
-      const head=box(scene,.48,1.45,.48,material(0x1b252c,.45,.35),x,6.15,z,false);
-      for(let i=0;i<3;i++) {
-        const c=[0xff4a43,0xffc44b,0x53df8c][i];
-        const bulb=new THREE.Mesh(new THREE.SphereGeometry(.14,10,8),new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:.6}));
-        bulb.position.set(x,6.63-i*.45,z+.255);scene.add(bulb);
-      }
+      signalPoles.push({x,y:3.25,z});
+      signalHeads.push({x,y:6.15,z});
+      for(let i=0;i<3;i++)signalBulbs[i].push({x,y:6.63-i*.45,z:z+.255});
     }
+
+    function addInstances(geometry,mat,items) {
+      if(!items.length)return;
+      const mesh=new THREE.InstancedMesh(geometry,mat,items.length);
+      const dummy=new THREE.Object3D();
+      items.forEach((item,i)=>{
+        dummy.position.set(item.x,item.y,item.z);
+        dummy.rotation.set(0,item.ry||0,0);
+        dummy.scale.set(item.sx||1,item.sy||1,item.sz||1);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i,dummy.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate=true;
+      mesh.castShadow=false;
+      mesh.receiveShadow=false;
+      scene.add(mesh);
+    }
+
+    addInstances(new THREE.CylinderGeometry(.12,.17,8,8),poleMat,lampPoles);
+    addInstances(new THREE.BoxGeometry(1.8,.12,.12),poleMat,lampArms);
+    addInstances(new THREE.BoxGeometry(.62,.18,.4),lampMat,lampHeads);
+    addInstances(new THREE.CylinderGeometry(.12,.16,6.5,8),poleMat,signalPoles);
+    addInstances(new THREE.BoxGeometry(.48,1.45,.48),signalHeadMat,signalHeads);
+    signalBulbs.forEach((items,i)=>addInstances(new THREE.SphereGeometry(.14,8,6),signalBulbMats[i],items));
   }
-  
+
   function buildCity() {
     const windowMatrices={cool:[],warm:[]};
     const batches={
