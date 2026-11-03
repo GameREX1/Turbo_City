@@ -11,14 +11,15 @@ Open **https://turbocity.gamerax.online**, choose a car and a drive mode, then s
 | Action | Keyboard | Touch |
 |---|---|---|
 | Accelerate | W / Up Arrow | Gas |
-| Brake / reverse | S / Down Arrow | Brake |
+| Brake | Space | Brake |
+| Reverse | S / Down Arrow | REV |
 | Steer | A / D or Left / Right | Left / right |
 | Recover car | R | — |
 | Change camera | C | Camera button |
 | Pause / resume | Escape / Enter | Pause button |
 | Fullscreen | — | Fullscreen button |
 
-Space also applies the brake.
+S / Down first slows the car, then engages reverse. Space is a brake only.
 
 ## Drive modes
 
