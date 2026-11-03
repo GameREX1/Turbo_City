@@ -22,8 +22,8 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
     const asphalt = makeNoiseTexture("#202a3a","#7b8aa7",41);
     grass.repeat.set(90,90);
     const grassMat = new THREE.MeshStandardMaterial({map:grass,roughness:1});
-    const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,roughness:.96});
-    const roadMatH = new THREE.MeshStandardMaterial({map:asphalt.clone(),roughness:.96});
+    const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,roughness:.72,metalness:.18,envMapIntensity:.8});
+    const roadMatH = new THREE.MeshStandardMaterial({map:asphalt.clone(),roughness:.72,metalness:.18,envMapIntensity:.8});
     roadMatV.map.repeat.set(2,48);
     roadMatH.map.repeat.set(48,2);
     roadMatH.map.needsUpdate = true;
