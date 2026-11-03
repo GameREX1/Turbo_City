@@ -34,6 +34,8 @@ if (new URLSearchParams(window.location.search).has("ciDebug")) {
     return {
       keys:{...keys}, input:{...input},
       velocity:{x:world.velocity.x,y:world.velocity.y,z:world.velocity.z},
+      position:player?{x:player.position.x,y:player.position.y,z:player.position.z}:null,
+      safePosition:{x:world.safePosition.x,y:world.safePosition.y,z:world.safePosition.z},
       forwardSpeed:world.velocity.dot(forward),
       yaw:world.yaw, started:world.started, paused:world.paused,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
@@ -961,7 +963,7 @@ function bindControls() {
     if(e.code==="KeyR" && world.started)recoverCar();
     if(e.code==="KeyC" && world.started)toggleCamera();
     if(e.code==="Escape" && world.started){pauseGame();e.preventDefault();}
-    if(e.code==="Enter" && world.paused)pauseGame(false);
+    if(e.code==="Enter" && world.paused){pauseGame(false);e.preventDefault();e.stopPropagation();}
   });
   window.addEventListener("keyup",e=>{if(controlMap[e.code])keys[e.code]=false;});
   window.addEventListener("blur",()=>{
