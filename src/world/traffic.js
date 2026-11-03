@@ -1,9 +1,10 @@
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 export function createTrafficModule({ scene, world, material, rand }) {
   const colors=[0xe7e4d9,0x2c536f,0x9b3038,0x777f83,0xd2a34b,0x1d3433,0x526a86];
   const roadXs=[-320,-160,0,160,320];
-  const trafficMeshes={bodies:[],glass:null,bumpers:null,headlights:null,taillights:null,tires:null,rims:null};
+  const trafficMeshes={bodies:[],roofs:[],glass:null,bumpers:null,headlights:null,taillights:null,tires:null,rims:null,mirrors:null,grilles:null,doorTrim:null};
   const dummy=new THREE.Object3D();
   const matrixPosition=new THREE.Vector3();
   const matrixScale=new THREE.Vector3();
@@ -45,8 +46,15 @@ export function createTrafficModule({ scene, world, material, rand }) {
     const bodySlots=bodyCounts.map(()=>0);
     records.forEach(record=>{
       const bodyMesh=trafficMeshes.bodies[record.colorIndex];
-      place(bodyMesh,bodySlots[record.colorIndex]++,record,0,.72,0,1.92,.52,4.02);
-      place(trafficMeshes.glass,record.id,record,0,1.2,-.02,1.62,.57,1.9);
+      const bodySlot=bodySlots[record.colorIndex]++;
+      place(bodyMesh,bodySlot,record,0,.72,0,1.92,.52,4.02);
+      place(trafficMeshes.roofs[record.colorIndex],bodySlot,record,0,1.48,.02,1.14,.10,.92);
+      place(trafficMeshes.glass,record.id,record,0,1.19,-.02,1.62,.57,1.9);
+      place(trafficMeshes.grilles,record.id,record,0,.66,-2.055,.88,.19,.07);
+      place(trafficMeshes.doorTrim,record.id*2,record,-.965,.69,.03,.035,.035,1.10);
+      place(trafficMeshes.doorTrim,record.id*2+1,record,.965,.69,.03,.035,.035,1.10);
+      place(trafficMeshes.mirrors,record.id*2,record,-.96,1.05,-.78,.20,.13,.27);
+      place(trafficMeshes.mirrors,record.id*2+1,record,.96,1.05,-.78,.20,.13,.27);
       place(trafficMeshes.bumpers,record.id*2,record,0,.47,-2.03,1.82,.13,.34);
       place(trafficMeshes.bumpers,record.id*2+1,record,0,.47,2.03,1.82,.13,.34);
       for(const side of [-1,1]) {
@@ -63,7 +71,7 @@ export function createTrafficModule({ scene, world, material, rand }) {
         place(trafficMeshes.rims,wheelIndex,record,side*.98,.39,axle*1.27,.255,.36,.36,spin);
       }
     });
-    for(const mesh of [...trafficMeshes.bodies,trafficMeshes.glass,trafficMeshes.bumpers,trafficMeshes.headlights,trafficMeshes.taillights,trafficMeshes.tires,trafficMeshes.rims]) {
+    for(const mesh of [...trafficMeshes.bodies,...trafficMeshes.roofs,trafficMeshes.glass,trafficMeshes.bumpers,trafficMeshes.headlights,trafficMeshes.taillights,trafficMeshes.tires,trafficMeshes.rims,trafficMeshes.mirrors,trafficMeshes.grilles,trafficMeshes.doorTrim]) {
       if(mesh)mesh.instanceMatrix.needsUpdate=true;
     }
   }
@@ -96,13 +104,21 @@ export function createTrafficModule({ scene, world, material, rand }) {
     const tailMaterial=new THREE.MeshStandardMaterial({color:0xff3448,emissive:0xb40d20,emissiveIntensity:1.0});
     const tireMaterial=material(0x111519,.94);
     const rimMaterial=material(0xb9c3c9,.24,.92);
-    trafficMeshes.bodies=paintMaterials.map((mat,index)=>makeInstanced(new THREE.BoxGeometry(1,1,1),mat,bodyCounts[index]));
-    trafficMeshes.glass=makeInstanced(new THREE.BoxGeometry(1,1,1),glassMaterial,records.length);
+    // Softly rounded body and canopy geometry avoids the boxy toy-car look.
+    const bodyGeometry=new RoundedBoxGeometry(1,1,1,3,.12);
+    const roofGeometry=new RoundedBoxGeometry(1,1,1,2,.045);
+    const canopyGeometry=new RoundedBoxGeometry(1,1,1,3,.10);
+    trafficMeshes.bodies=paintMaterials.map((mat,index)=>makeInstanced(bodyGeometry,mat,bodyCounts[index]));
+    trafficMeshes.roofs=paintMaterials.map((mat,index)=>makeInstanced(roofGeometry,mat,bodyCounts[index]));
+    trafficMeshes.glass=makeInstanced(canopyGeometry,glassMaterial,records.length);
     trafficMeshes.bumpers=makeInstanced(new THREE.BoxGeometry(1,1,1),darkMaterial,records.length*2);
     trafficMeshes.headlights=makeInstanced(new THREE.BoxGeometry(1,1,1),headMaterial,records.length*2);
     trafficMeshes.taillights=makeInstanced(new THREE.BoxGeometry(1,1,1),tailMaterial,records.length*2);
     trafficMeshes.tires=makeInstanced(new THREE.CylinderGeometry(.35,.35,.24,18),tireMaterial,records.length*4);
     trafficMeshes.rims=makeInstanced(new THREE.CylinderGeometry(.18,.18,.255,14),rimMaterial,records.length*4);
+    trafficMeshes.mirrors=makeInstanced(new RoundedBoxGeometry(1,1,1,2,.08),paintMaterials[0],records.length*2);
+    trafficMeshes.grilles=makeInstanced(new THREE.BoxGeometry(1,1,1),darkMaterial,records.length);
+    trafficMeshes.doorTrim=makeInstanced(new THREE.BoxGeometry(1,1,1),rimMaterial,records.length*2);
     refreshTrafficMatrices();
   }
 
