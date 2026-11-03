@@ -608,17 +608,36 @@ function buildFallbackVehicle() {
   hullGeo.setAttribute("position",new THREE.Float32BufferAttribute(verts,3));
   hullGeo.setIndex(indices);hullGeo.computeVertexNormals();
   const hull=new THREE.Mesh(hullGeo,paint);hull.castShadow=true;root.add(hull);
-  const canopy=box(root,1.42,.63,1.62,glass,0,1.22,.05);
-  canopy.scale.set(1,.92,1);
-  box(root,1.58,.08,1.9,black,0,1.0,.05);
-  box(root,1.95,.15,.34,black,0,.48,-2.12);
-  box(root,1.92,.15,.4,black,0,.48,2.1);
-  for(const sx of [-1,1]){
-    const lamp=new THREE.Mesh(new THREE.BoxGeometry(.44,.16,.07),new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xb2eaff,emissiveIntensity:2.5}));
-    lamp.position.set(sx*.62,.74,-2.2);root.add(lamp);
-    const tail=new THREE.Mesh(new THREE.BoxGeometry(.58,.14,.07),new THREE.MeshStandardMaterial({color:0xff304b,emissive:0xaa0019,emissiveIntensity:2}));
-    tail.position.set(sx*.62,.73,2.18);root.add(tail);
+  // Sloped glasshouse instead of a simple rectangular cabin.
+  const addQuad=(points,mat)=>{
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute("position",new THREE.Float32BufferAttribute(points.flat(),3));
+    geo.setIndex([0,1,2,0,2,3]);geo.computeVertexNormals();
+    const mesh=new THREE.Mesh(geo,mat);mesh.material.side=THREE.DoubleSide;
+    mesh.castShadow=true;mesh.receiveShadow=true;root.add(mesh);return mesh;
+  };
+  box(root,1.3,.13,1.13,paint,0,1.62,.12);
+  box(root,1.62,.07,2.02,black,0,1.0,.12);
+  addQuad([[-.78,1.02,-.88],[.78,1.02,-.88],[.62,1.57,-.4],[-.62,1.57,-.4]],glass);
+  addQuad([[-.78,1.02,1.2],[.78,1.02,1.2],[.62,1.57,.66],[-.62,1.57,.66]],glass);
+  for(const side of [-1,1]){
+    addQuad([[side*.84,1.03,-.83],[side*.84,1.03,1.15],[side*.65,1.56,.63],[side*.65,1.56,-.37]],glass);
+    box(root,.075,.58,.09,black,side*.83,1.3,-.39);
+    box(root,.075,.58,.09,black,side*.83,1.3,.69);
+    box(root,.25,.13,.34,paint,side*1.02,1.26,-.67);
+    box(root,.12,.16,1.82,paint,side*1.01,.48,.16);
+    box(root,.15,.045,.58,black,side*.48,.82,-1.42);
+    box(root,.22,.09,.46,black,side*.78,.62,.55);
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(.46,.15,.07),new THREE.MeshStandardMaterial({color:0xf4fcff,emissive:0xa5e8ff,emissiveIntensity:2.8}));
+    lamp.position.set(side*.62,.74,-2.2);root.add(lamp);
+    const tail=new THREE.Mesh(new THREE.BoxGeometry(.6,.14,.07),new THREE.MeshStandardMaterial({color:0xff304b,emissive:0xc60022,emissiveIntensity:2.2}));
+    tail.position.set(side*.62,.73,2.18);root.add(tail);
   }
+  box(root,.76,.22,.08,black,0,.59,-2.21,false);
+  box(root,2.08,.1,.48,black,0,.38,-2.17,false);
+  box(root,1.96,.14,.42,black,0,.38,2.14,false);
+  // Rear deck vents and a low rear lip add shape without relying on external assets.
+  for(let i=-2;i<=2;i++)box(root,.075,.035,.48,black,i*.19,1.02,1.58,false);
   vehicleWheels=[];
   const tire=material(0x101317,.92),rim=material(0xcbd4d8,.22,.9);
   for(const sx of [-1,1])for(const sz of [-1,1]){
@@ -646,10 +665,12 @@ function applyVehicleMaterials(model,index) {
     if(!obj.isMesh)return;
     obj.castShadow=true;obj.receiveShadow=true;
     const n=(obj.name||"").toLowerCase();
-    if(n==="body") obj.material=bodyMat;
-    else if(n.startsWith("rim_")) obj.material=rimMat;
-    else if(n==="glass") obj.material=glassMat;
-    else if(n==="trim") obj.material=material(0x151c22,.3,.78);
+    const materialNames=(Array.isArray(obj.material)?obj.material:[obj.material])
+      .filter(Boolean).map(m=>(m.name||"").toLowerCase()).join(" ");
+    if(n==="body"||n.includes("body")||materialNames.includes("body")||materialNames.includes("paint")) obj.material=bodyMat;
+    else if(n.startsWith("rim_")||n.includes("rim")) obj.material=rimMat;
+    else if(n==="glass"||n.includes("glass")||materialNames.includes("glass")) obj.material=glassMat;
+    else if(n==="trim"||n.includes("trim")) obj.material=material(0x151c22,.3,.78);
     else if(Array.isArray(obj.material)) obj.material=obj.material.map(m=>m.clone());
     else if(obj.material) obj.material=obj.material.clone();
   });
@@ -657,19 +678,29 @@ function applyVehicleMaterials(model,index) {
 function addVariantKit(root,index) {
   const spec=cars[index];
   const dark=material(0x111a21,.35,.72);
-  const accent=new THREE.MeshStandardMaterial({color:spec.color,metalness:.45,roughness:.3,emissive:spec.color,emissiveIntensity:.14});
-  if(spec.wing===1 || spec.wing===3) {
-    box(root,1.9,.12,.38,dark,0,1.28,1.92);
-    for(const x of [-.68,.68]) box(root,.1,.48,.12,dark,x,1.05,1.87);
-    box(root,1.9,.08,.27,accent,0,1.52,1.92);
-  }
-  if(spec.wing===2) {
-    box(root,1.7,.08,.34,accent,0,1.12,1.95);
-  }
-  // A subtle side blade gives each RAX trim its own identity.
+  const carbon=material(0x202a31,.3,.82);
+  const accent=new THREE.MeshStandardMaterial({color:spec.color,metalness:.58,roughness:.24,emissive:spec.color,emissiveIntensity:.18});
+  // Shared front splitter, side sills and rear diffuser.
+  box(root,2.02,.09,.5,carbon,0,.39,-2.14,false);
+  box(root,1.95,.12,.42,carbon,0,.4,2.12,false);
   for(const side of [-1,1]) {
-    const blade=box(root,.12,.12,1.6,accent,side*.98,.48,.25,false);
-    blade.rotation.x=.02;
+    box(root,.12,.13,1.65,carbon,side*.99,.48,.12,false);
+    box(root,.18,.08,.62,accent,side*.94,.68,-1.35,false);
+  }
+  if(spec.wing===1) {
+    // Track package: raised two-post rear wing.
+    box(root,1.98,.11,.34,carbon,0,1.28,1.86,false);
+    for(const x of [-.72,.72])box(root,.1,.48,.12,carbon,x,1.05,1.82,false);
+    box(root,2.0,.09,.3,accent,0,1.54,1.86,false);
+  } else if(spec.wing===2) {
+    // Grand-tourer ducktail spoiler.
+    box(root,1.62,.1,.28,accent,0,1.12,1.96,false);
+  } else if(spec.wing===3) {
+    // Hyper-sport kit with a wider rear aero blade and front canards.
+    box(root,2.12,.1,.38,carbon,0,1.31,1.88,false);
+    for(const x of [-.78,.78])box(root,.11,.5,.12,carbon,x,1.08,1.84,false);
+    box(root,2.12,.08,.3,accent,0,1.58,1.88,false);
+    for(const side of [-1,1])box(root,.38,.08,.34,accent,side*.92,.55,-1.82,false);
   }
 }
 
