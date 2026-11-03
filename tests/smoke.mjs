@@ -42,7 +42,10 @@ try {
 
   // S should slow forward travel and then engage reverse.
   await page.keyboard.down("s");
-  await page.waitForTimeout(1900);
+  await page.waitForTimeout(250);
+  console.log("DEBUG while S held:", await page.evaluate(() => window.__turboCityDebug?.()));
+  await page.waitForTimeout(1650);
+  console.log("DEBUG after S hold:", await page.evaluate(() => window.__turboCityDebug?.()));
   await page.keyboard.up("s");
   assert.equal(await page.locator("#gear").innerText(), "R", "S should engage reverse after stopping");
 
