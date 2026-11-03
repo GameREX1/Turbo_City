@@ -162,22 +162,22 @@ function makeNoiseTexture(base, fleck, seed=1) {
 }
 function makeSky() {
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0x9ab7c8, 360, 1280);
+  scene.fog = new THREE.Fog(0xc0c8cb, 520, 1540);
   const sky = new Sky();
   sky.scale.setScalar(12000);
   scene.add(sky);
   const u = sky.material.uniforms;
-  u.turbidity.value = 5.4;
-  u.rayleigh.value = 2.4;
-  u.mieCoefficient.value = .005;
-  u.mieDirectionalG.value = .78;
+  u.turbidity.value = 2.6;
+  u.rayleigh.value = 1.45;
+  u.mieCoefficient.value = .0022;
+  u.mieDirectionalG.value = .72;
   const sun = new THREE.Vector3();
   const phi = THREE.MathUtils.degToRad(89 - 23);
   const theta = THREE.MathUtils.degToRad(180);
   sun.setFromSphericalCoords(1,phi,theta);
   u.sunPosition.value.copy(sun);
-  scene.add(new THREE.HemisphereLight(0xe7f5ff,0x59665f,1.75));
-  sunLight = new THREE.DirectionalLight(0xffe3bf,3.25);
+  scene.add(new THREE.HemisphereLight(0xf2f5f7,0x64675d,1.28));
+  sunLight = new THREE.DirectionalLight(0xfff1d9,2.75);
   sunLight.position.copy(sun).multiplyScalar(430);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.set(1024,1024);
@@ -190,7 +190,7 @@ function makeSky() {
   sunLight.shadow.bias = -.00018;
   sunLight.shadow.normalBias = .035;
   scene.add(sunLight);
-  const fill = new THREE.DirectionalLight(0x91cfff,.65);
+  const fill = new THREE.DirectionalLight(0xdce7ee,.32);
   fill.position.set(200,110,-180);
   scene.add(fill);
 }
@@ -421,6 +421,7 @@ async function init() {
     pmremGenerator.compileEquirectangularShader();
     pmrem=pmremGenerator.fromScene(new RoomEnvironment(renderer),.04).texture;
     scene.environment=pmrem;
+    scene.environmentIntensity=1.05;
     pmremGenerator.dispose();
 
     setLoading(14,"BUILDING CITY STREETS…");
