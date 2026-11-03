@@ -9,6 +9,18 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     ctx.fillStyle=accent;ctx.font="900 54px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(text,256,65);
     const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
   }
+
+  function verticalSignTexture(text, accent="#30ddf5") {
+    const c=document.createElement("canvas");c.width=160;c.height=512;
+    const ctx=c.getContext("2d");
+    ctx.fillStyle="#07101eee";ctx.fillRect(0,0,c.width,c.height);
+    ctx.strokeStyle=accent;ctx.lineWidth=8;ctx.strokeRect(7,7,146,498);
+    ctx.shadowColor=accent;ctx.shadowBlur=20;ctx.fillStyle=accent;
+    ctx.font="900 42px Arial";ctx.textAlign="center";ctx.textBaseline="middle";
+    const chars=String(text).split("").slice(0,8);
+    chars.forEach((ch,i)=>ctx.fillText(ch,80,72+i*51));
+    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;return tex;
+  }
   
   function addCityBuilding(x,z,w,d,h,index,windowMatrices,batches) {
     // Buildings share materials and are submitted through instanced meshes.
@@ -17,7 +29,26 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     world.buildings.push({x,z,w,d});
     batches.plinths.push({x,y:.7,z,sx:w+1.2,sy:1.4,sz:d+1.2});
     batches.roofs.push({x,y:h+.35,z,sx:w*.96,sy:.8,sz:d*.96});
+
+    // Add slim structural mullions and floor bands to break up flat box facades.
+    const columnsX=Math.max(3,Math.floor(w/7));
+    const columnsZ=Math.max(3,Math.floor(d/7));
+    for(let k=0;k<=columnsX;k++) {
+      const xx=x-w/2+k*(w/columnsX);
+      for(const side of [-1,1]) batches.facadeVertical.push({x:xx,y:h/2,z:z+side*(d/2+.07),sx:.22,sy:h,sz:.14});
+    }
+    for(let k=0;k<=columnsZ;k++) {
+      const zz=z-d/2+k*(d/columnsZ);
+      for(const side of [-1,1]) batches.facadeVertical.push({x:x+side*(w/2+.07),y:h/2,z:zz,sx:.14,sy:h,sz:.22});
+    }
     const floors=Math.floor(h/4.15);
+    for(let floor=3;floor<floors;floor+=3) {
+      const yy=floor*4.15;
+      batches.facadeHorizontal.push({x,y:yy,z:z+d/2+.085,sx:w,sy:.12,sz:.12});
+      batches.facadeHorizontal.push({x,y:yy,z:z-d/2-.085,sx:w,sy:.12,sz:.12});
+      batches.facadeHorizontal.push({x:x+w/2+.085,y:yy,z,sx:.12,sy:.12,sz:d});
+      batches.facadeHorizontal.push({x:x-w/2-.085,y:yy,z,sx:.12,sy:.12,sz:d});
+    }
     const colsX=Math.max(2,Math.floor(w/4.4));
     const colsZ=Math.max(2,Math.floor(d/4.4));
     const winW=1.35, winH=1.75;
@@ -46,16 +77,27 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       batches.rooftop.push({x:ux,y:h+1.05,z:uz,sx:w*.15,sy:1.5,sz:d*.18});
       batches.ventCaps.push({x:ux,y:h+1.9,z:uz,sx:w*.1,sy:.18,sz:d*.12});
     }
-    if(index%5===0 && h>45) {
-      const sign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w*.76,25),5.5),new THREE.MeshBasicMaterial({map:signTexture(index%2?"RAX PLAZA":"TURBO CITY"),side:THREE.DoubleSide}));
-      sign.position.set(x,h*.72,z+d/2+.12);scene.add(sign);
+    if(index%4===0 && h>42) {
+      const accents=["#30ddf5","#ff72d2","#ffd36a"];
+      const accent=accents[index%accents.length];
+      const labels=["TURBO","GAMERAX","RAX","NEON"];
+      const sign=new THREE.Mesh(
+        new THREE.PlaneGeometry(3.8,9.5),
+        new THREE.MeshBasicMaterial({map:verticalSignTexture(labels[index%labels.length],accent),side:THREE.DoubleSide,toneMapped:false})
+      );
+      sign.position.set(x+w*.32,h*.58,z+d/2+.18);
+      sign.renderOrder=2;
+      scene.add(sign);
+      const glow=new THREE.Mesh(new THREE.BoxGeometry(4.15,9.85,.16),new THREE.MeshBasicMaterial({color:0x13253d,transparent:true,opacity:.92}));
+      glow.position.set(x+w*.32,h*.58,z+d/2+.08);
+      scene.add(glow);
     }
   }
   
   function buildWindows(windowMatrices) {
     const geometry=new THREE.BoxGeometry(1,1,.08);
-    const coolMat=new THREE.MeshStandardMaterial({color:0x91c7d4,roughness:.28,metalness:.52,emissive:0x1a3b47,emissiveIntensity:.13});
-    const warmMat=new THREE.MeshStandardMaterial({color:0xf2c992,roughness:.35,metalness:.25,emissive:0x8d5d25,emissiveIntensity:.22});
+    const coolMat=new THREE.MeshStandardMaterial({color:0x76c9f2,roughness:.22,metalness:.58,emissive:0x236fa7,emissiveIntensity:.42});
+    const warmMat=new THREE.MeshStandardMaterial({color:0xffc5a0,roughness:.24,metalness:.28,emissive:0xff6eb9,emissiveIntensity:.48});
     for(const [items,mat] of [[windowMatrices.cool,coolMat],[windowMatrices.warm,warmMat]]) {
       const inst=new THREE.InstancedMesh(geometry,mat,items.length);
       const obj=new THREE.Object3D();
@@ -142,15 +184,20 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
   function buildCity() {
     const windowMatrices={cool:[],warm:[]};
     const batches={
-      bodies:Array.from({length:7},()=>[]),plinths:[],roofs:[],rooftop:[],ventCaps:[]
+      bodies:Array.from({length:7},()=>[]),plinths:[],roofs:[],rooftop:[],ventCaps:[],
+      facadeVertical:[],facadeHorizontal:[]
     };
-    const colors=[0x78858e,0x5d7180,0x77828a,0x4b6070,0x89918f,0x566573,0x6e7b85];
-    const bodyMaterials=colors.map(color=>material(color,.78,.16));
+    const colors=[0x354968,0x405879,0x4a527f,0x324f70,0x605178,0x3c607d,0x4a5b86];
+    const bodyMaterials=colors.map(color=>new THREE.MeshStandardMaterial({
+      color,roughness:.3,metalness:.48,emissive:0x101d38,emissiveIntensity:.18
+    }));
     const shared={
-      plinth:material(0x39444b,.9),
-      roof:material(0x35424b,.65,.32),
-      rooftop:material(0x46515a,.82,.25),
-      ventCap:material(0x252f37,.5)
+      plinth:material(0x202d43,.62,.42),
+      roof:material(0x26354b,.42,.5),
+      rooftop:material(0x37465e,.58,.42),
+      ventCap:material(0x172337,.38,.62),
+      facade:material(0x172942,.34,.62),
+      facadeBand:material(0x52617d,.38,.58)
     };
     let seed=71;
     const parkBlocks=new Set(["-2,1","-3,-1","1,1"]);
@@ -158,14 +205,14 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       if((gx===2 && gz===-3) || parkBlocks.has(gx+","+gz)) continue;
       const cx=gx*ROAD_SPACING+ROAD_SPACING/2;
       const cz=gz*ROAD_SPACING+ROAD_SPACING/2;
-      const n=1+(seed%3);
+      const n=2+(seed%3);
       for(let k=0;k<n;k++) {
         seed=(seed*9301+49297)%233280;
         const x=cx+(((seed*17)%47)-23);
         const z=cz+(((seed*31)%47)-23);
         const w=26+((seed*7)%24);
         const d=26+((seed*11)%25);
-        const h=24+((seed*19)%85);
+        const h=38+((seed*19)%105);
         addCityBuilding(x,z,w,d,h,seed,windowMatrices,batches);
       }
     }
@@ -188,6 +235,8 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     add(batches.roofs,shared.roof);
     add(batches.rooftop,shared.rooftop);
     add(batches.ventCaps,shared.ventCap);
+    add(batches.facadeVertical,shared.facade);
+    add(batches.facadeHorizontal,shared.facadeBand);
     buildWindows(windowMatrices);
     buildParks();
     buildStreetFurniture();
