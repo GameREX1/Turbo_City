@@ -48,9 +48,24 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     const steering=(controls.right?1:0)-(controls.left?1:0);
     const speedFactor=clamp(Math.abs(speedAlong)/10,0,1);
     const reverse=speedAlong<-.4?-1:1;
-    // Steering fades to zero when stopped, so the car cannot spin in place.
-    const steeringResponse=speedFactor===0?0:.16+speedFactor*.58;
-    world.yaw+=steering*spec.steer*steeringResponse*reverse*dt;
+
+    // Reduce steering authority as speed rises. The old response allowed
+    // unrealistically tight circles at high speed.
+    const speedKmh=Math.abs(speedAlong)*3.6;
+    const highSpeedFactor=clamp(speedKmh/286,0,1);
+    const maxYawRate=THREE.MathUtils.lerp(.82,.28,highSpeedFactor);
+    const handlingFactor=clamp(spec.steer/1.92,.85,1.12);
+    const yawDelta=steering*maxYawRate*speedFactor*handlingFactor*reverse*dt;
+    world.yaw+=yawDelta;
+
+    // Keep momentum aligned with the new heading instead of sliding sideways.
+    if(yawDelta!==0) {
+      const cos=Math.cos(yawDelta),sin=Math.sin(yawDelta);
+      const vx=world.velocity.x,vz=world.velocity.z;
+      world.velocity.x=vx*cos-vz*sin;
+      world.velocity.z=vx*sin+vz*cos;
+    }
+
     world.speed=world.velocity.length()*(speedAlong<0?-1:1);
     world.steering=steering;
     world.lateral=world.velocity.dot(right);
