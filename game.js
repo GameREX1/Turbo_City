@@ -9,6 +9,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
 const $ = (id) => document.getElementById(id);
+const isSmokeMode = new URLSearchParams(window.location.search).has("ciDebug");
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const damp = (a, b, speed, dt) => THREE.MathUtils.damp(a, b, speed, dt);
 const rand = (min, max) => min + Math.random() * (max - min);
@@ -149,12 +150,12 @@ function buildRenderer() {
     stencil: false,
     depth: true
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth<800 ? 1.5 : 2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(isSmokeMode ? 0.5 : Math.min(window.devicePixelRatio || 1, window.innerWidth<800 ? 1.25 : 1.5));
+  renderer.setSize(isSmokeMode ? 320 : window.innerWidth,isSmokeMode ? 200 : window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !isSmokeMode;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   $("game").appendChild(renderer.domElement);
 
@@ -163,10 +164,14 @@ function buildRenderer() {
   camera.lookAt(0,0,0);
 
   try {
-    composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene,camera));
-    composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),.23,.62,.86));
-    composer.addPass(new OutputPass());
+    if(isSmokeMode) {
+      composer = null;
+    } else {
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene,camera));
+      composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),.23,.62,.86));
+      composer.addPass(new OutputPass());
+    }
   } catch (err) {
     console.warn("Post-processing unavailable; using direct renderer.",err);
     composer = null;
@@ -797,6 +802,11 @@ function makePlayerVehicle(index) {
 }
 
 async function loadCarModel() {
+  if(isSmokeMode) {
+    vehicleTemplate=null;
+    fallbackCar=true;
+    return;
+  }
   const loader=new GLTFLoader();
   const draco=new DRACOLoader();
   draco.setDecoderPath(DRACO_PATH);
@@ -1254,14 +1264,17 @@ function tick() {
     if(vehicleWheels.length)vehicleWheels.forEach(w=>{if(w.mesh)w.mesh.rotation.x+=dt*.08;});
   }
   updateAudio();
-  if(composer)composer.render();else renderer.render(scene,camera);
+  if(!isSmokeMode) {
+    if(composer)composer.render();
+    else renderer.render(scene,camera);
+  }
 }
 function onResize() {
   if(!renderer)return;
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,window.innerWidth<800?1.5:2));
-  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(isSmokeMode?0.5:Math.min(window.devicePixelRatio||1,window.innerWidth<800?1.25:1.5));
+  renderer.setSize(isSmokeMode?320:window.innerWidth,isSmokeMode?200:window.innerHeight);
   if(composer)composer.setSize(window.innerWidth,window.innerHeight);
 }
 
