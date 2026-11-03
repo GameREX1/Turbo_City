@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#08111b">
-<meta name="description" content="Turbo City by GameRAX — an open-world 3D driving and stunt playground.">
+<meta name="description" content="Turbo City by GameRAX — an open-world 3D arcade driving game.">
 <title>Turbo City | GameRAX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,8 +81,9 @@ h1 span{color:var(--cyan)}
 #gear{color:#fff;font:800 18px "Barlow Condensed";margin-left:5px}
 #nboost{margin-top:10px}
 .nitro-title{display:flex;justify-content:space-between;color:#9cafc0;font-size:7px;font-weight:800;letter-spacing:1.5px;margin-bottom:5px}
-.nitro-track{height:5px;background:#ffffff22;border-radius:8px;overflow:hidden}
-#nitro-fill{height:100%;width:100%;background:linear-gradient(90deg,#10cce9,#c4fbff);box-shadow:0 0 12px #30ddf5}
+#drive-distance{margin-top:10px;padding-top:8px;border-top:1px solid #ffffff20}
+#drive-distance .nitro-title{margin:0}
+#drive-distance b{color:#fff;font:800 15px "Barlow Condensed"}
 #bottom-left{position:absolute;left:26px;bottom:25px;display:flex;gap:9px}
 .pill{padding:10px 13px;border:1px solid #ffffff2d;border-radius:9px;background:#07111dd9;backdrop-filter:blur(10px);font-size:9px;color:#aabac8}
 .pill b{color:white;margin-left:5px;font:800 18px "Barlow Condensed"}
@@ -91,7 +92,6 @@ h1 span{color:var(--cyan)}
 .touch{width:58px;height:58px;border:1px solid #ffffff4c;border-radius:14px;background:#081522c9;color:#fff;font-size:18px;font-weight:900;backdrop-filter:blur(10px);touch-action:none}
 .touch:active,.touch.active{background:#24cee54d;border-color:var(--cyan)}
 .touch.small{width:54px;height:50px;font-size:9px;letter-spacing:1px}
-.touch.nitro{color:var(--cyan);border-color:#30ddf588}
 .touch.brake{color:#ffbd91;border-color:#ff9c6d77}
 #pause-screen{position:fixed;z-index:8;inset:0;display:none;place-items:center;background:#02060ba9;backdrop-filter:blur(7px)}
 .pause-card{width:min(360px,90vw);padding:28px;border:1px solid #30ddf555;border-radius:16px;background:#081523f2;text-align:center}
@@ -125,7 +125,7 @@ h1 span{color:var(--cyan)}
  <div class="garage-panel">
   <div class="kicker">GameRAX Originals · Open World Driving</div>
   <h1>TURBO <span>CITY</span></h1>
-  <p class="subtitle">A bigger playground. Faster machines. Find the stunt zones, chase the stars and take the long way home.</p>
+  <p class="subtitle">A bigger playground. Faster machines. Explore the city, take on driving courses, collect stars and discover new routes.</p>
   <div class="section-label"><span>Choose your machine</span><span id="car-count">01 / 04</span></div>
   <div class="car-card">
    <button class="cycle" id="prev-car" aria-label="Previous car">‹</button>
@@ -142,10 +142,10 @@ h1 span{color:var(--cyan)}
   <div class="mode-row">
    <button class="mode active" data-mode="free">FREE ROAM</button>
    <button class="mode" data-mode="sprint">CITY SPRINT</button>
-   <button class="mode" data-mode="stunt">STUNT PARK</button>
+   <button class="mode" data-mode="skill">SKILL COURSE</button>
   </div>
   <button class="start" id="start-button" disabled>LOADING WORLD…</button>
-  <div class="garage-foot"><span>WASD / ARROWS · SPACE HANDBRAKE<br>SHIFT NITRO · R RECOVER · C CAMERA</span><span>HD RENDER<br>DESKTOP + MOBILE</span></div>
+  <div class="garage-foot"><span>WASD / ARROWS · SPACE BRAKE<br>R RECOVER · C CAMERA</span><span>HD RENDER<br>DESKTOP + MOBILE</span></div>
  </div>
 </section>
 <section id="hud">
@@ -167,7 +167,7 @@ h1 span{color:var(--cyan)}
  <div id="speed-panel">
   <div id="speed">000</div><div id="speed-unit">KM/H</div>
   <div id="gearline">GEAR <span id="gear">N</span></div>
-  <div id="nboost"><div class="nitro-title"><span>NITRO</span><span id="nitro-pct">100%</span></div><div class="nitro-track"><div id="nitro-fill"></div></div></div>
+  <div id="drive-distance"><div class="nitro-title"><span>TRAVELLED</span><span><b id="distance-count">0.0</b> KM</span></div></div>
  </div>
  <div id="touch-controls">
   <div class="touch-group">
@@ -176,8 +176,6 @@ h1 span{color:var(--cyan)}
   </div>
   <div class="touch-group">
    <button class="touch small brake" data-action="brake">BRAKE</button>
-   <button class="touch small" data-action="handbrake">DRIFT</button>
-   <button class="touch small nitro" data-action="nitro">NITRO</button>
    <button class="touch" data-action="gas">▲</button>
   </div>
  </div>
