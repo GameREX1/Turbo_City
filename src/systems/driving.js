@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { WORLD_LIMIT } from "../config/game.js";
 
 export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer, vehicle, getReadInput, toast, damp, clamp, collectStars, $ }) {
   function updatePhysics(dt) {
