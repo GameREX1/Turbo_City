@@ -657,15 +657,28 @@ function makePlayerVehicle(index) {
     const fallback=buildFallbackVehicle();
     root.add(fallback);
   }
-  const aoTexture=new THREE.TextureLoader().load("https://threejs.org/examples/models/gltf/ferrari_ao.png");
-  aoTexture.colorSpace=THREE.NoColorSpace;
-  const aoShadow=new THREE.Mesh(
-    new THREE.PlaneGeometry(2.62,5.2),
-    new THREE.MeshBasicMaterial({map:aoTexture,blending:THREE.MultiplyBlending,transparent:true,opacity:.48,toneMapped:false,depthWrite:false})
-  );
-  aoShadow.rotation.x=-Math.PI/2;aoShadow.position.y=.025;aoShadow.renderOrder=2;root.add(aoShadow);
-  const fallbackShadow=new THREE.Mesh(new THREE.CircleGeometry(2.15,32),new THREE.MeshBasicMaterial({color:0x06111b,transparent:true,opacity:.14,depthWrite:false}));
-  fallbackShadow.rotation.x=-Math.PI/2;fallbackShadow.position.y=.018;root.add(fallbackShadow);
+  const shadowCanvas=document.createElement("canvas");
+  shadowCanvas.width=128;shadowCanvas.height=256;
+  const shadowCtx=shadowCanvas.getContext("2d");
+  const shadowGradient=shadowCtx.createRadialGradient(64,128,12,64,128,124);
+  shadowGradient.addColorStop(0,"rgba(0,0,0,.48)");
+  shadowGradient.addColorStop(.42,"rgba(0,0,0,.28)");
+  shadowGradient.addColorStop(1,"rgba(0,0,0,0)");
+  shadowCtx.fillStyle=shadowGradient;shadowCtx.fillRect(0,0,128,256);
+  const softShadowTexture=new THREE.CanvasTexture(shadowCanvas);
+  const softShadow=new THREE.Mesh(new THREE.PlaneGeometry(3.3,5.5),new THREE.MeshBasicMaterial({
+    map:softShadowTexture,transparent:true,depthWrite:false,toneMapped:false
+  }));
+  softShadow.rotation.x=-Math.PI/2;softShadow.position.y=.018;softShadow.renderOrder=2;root.add(softShadow);
+  if(vehicleTemplate) {
+    const aoTexture=new THREE.TextureLoader().load("https://threejs.org/examples/models/gltf/ferrari_ao.png");
+    aoTexture.colorSpace=THREE.NoColorSpace;
+    const aoShadow=new THREE.Mesh(
+      new THREE.PlaneGeometry(2.62,5.2),
+      new THREE.MeshBasicMaterial({map:aoTexture,blending:THREE.MultiplyBlending,transparent:true,opacity:.36,toneMapped:false,depthWrite:false})
+    );
+    aoShadow.rotation.x=-Math.PI/2;aoShadow.position.y=.025;aoShadow.renderOrder=3;root.add(aoShadow);
+  }
 
   const rearLampMat=new THREE.MeshStandardMaterial({color:0x8c1825,emissive:0xff1834,emissiveIntensity:.75,roughness:.3});
   for(const side of [-1,1]) {
