@@ -117,7 +117,7 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
       }
     }
   
-    player.rotation.y=world.yaw;
+    player.rotation.y=-world.yaw;
     player.rotation.z=damp(player.rotation.z,-steering*.035,5,dt);
     player.rotation.x=damp(player.rotation.x,0,3,dt);
     if(playerLight)playerLight.intensity=1.25;
@@ -125,7 +125,7 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     vehicleWheels.forEach(w=>{
       if(w.mesh) {
         w.mesh.rotation.x-=speedAlong*dt/.34;
-        if(w.front)w.mesh.rotation.y=steering*.22;
+        if(w.front)w.mesh.rotation.y=-steering*.22;
       }
     });
   
