@@ -44,12 +44,6 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     const addWindow=(wx,wy,wz,ry,width=winW,height=winH,warm=false)=>{
       const target=warm?windowMatrices.warm:windowMatrices.cool;
       target.push({x:wx,y:wy,z:wz,ry,sx:width,sy:height});
-      const frame=windowMatrices.frames;
-      const depth=.12,border=.075;
-      for(const offset of [-1,1]){
-        frame.push({x:wx,y:wy+offset*(height/2+border/2),z:wz,ry,sx:width+border*2,sy:border,sz:depth});
-        frame.push({x:wx+offset*(width/2+border/2),y:wy,z:wz,ry,sx:border,sy:height,sz:depth});
-      }
     };
     for(let floor=1;floor<floors;floor++) {
       const yy=floor*4.15;
@@ -113,21 +107,6 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       });
       inst.instanceMatrix.needsUpdate=true;
       inst.castShadow=false;inst.receiveShadow=false;scene.add(inst);
-    }
-    if(windowMatrices.frames.length){
-      const frameGeometry=new THREE.BoxGeometry(1,1,1);
-      const frameMaterial=material(0x59646a,.46,.48);
-      const frames=new THREE.InstancedMesh(frameGeometry,frameMaterial,windowMatrices.frames.length);
-      const obj=new THREE.Object3D();
-      windowMatrices.frames.forEach((it,i)=>{
-        obj.position.set(it.x,it.y,it.z);
-        obj.rotation.set(0,it.ry,0);
-        obj.scale.set(it.sx,it.sy,it.sz);
-        obj.updateMatrix();
-        frames.setMatrixAt(i,obj.matrix);
-      });
-      frames.instanceMatrix.needsUpdate=true;
-      frames.castShadow=false;frames.receiveShadow=false;scene.add(frames);
     }
   }
   
@@ -237,7 +216,7 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
   }
 
   function buildCity() {
-    const windowMatrices={cool:[],warm:[],frames:[]};
+    const windowMatrices={cool:[],warm:[]};
     const batches={
       bodies:Array.from({length:7},()=>[]),plinths:[],roofs:[],rooftop:[],ventCaps:[],
       facadeVertical:[],facadeHorizontal:[],storeSigns:[],acUnits:[],
