@@ -18,8 +18,6 @@ Turbo_City/
 │   ├── config/
 │   │   ├── game.js          # Cars, road spacing and world limits
 │   │   └── quality.js       # Performance / Balanced / Ultra profiles
-│   ├── render/
-│   │   └── (renderer setup is coordinated by game.js)
 │   ├── vehicles/
 │   │   └── car.js           # Player car model, materials, wheels and fallback
 │   ├── world/
