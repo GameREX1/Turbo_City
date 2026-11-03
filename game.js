@@ -24,15 +24,14 @@ const cars = [
   { name:"RAX SOLAR", type:"HYPER SPORT CONCEPT", color:0xffa52c, top:342, accel:99, handling:91, power:31.5, grip:8.6, steer:1.98, wing:3 }
 ];
 
-const input = { gas:false, brake:false, left:false, right:false, handbrake:false, nitro:false };
+const input = { gas:false, brake:false, left:false, right:false };
 const keys = Object.create(null);
 const world = {
-  buildings: [], lamps: [], stars: [], ramps: [], gates: [], traffic: [], windows: [],
+  buildings: [], lamps: [], stars: [], obstacles: [], gates: [], traffic: [], windows: [],
   citySeed: 7183, score:0, collected:0, raceActive:false, raceStart:0, raceIndex:0,
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
-  yaw:0, speed:0, verticalSpeed:0, air:0, nitro:100, lateral:0, drift:0,
-  jumpCooldown:0, jumpFlash:0, combo:0, lastTrick:0, distance:0, prevPosition:new THREE.Vector3(),
-  steering:0, groundSpeed:0, audio:null, soundStarted:false
+  yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
+  velocity:new THREE.Vector3(), steering:0, audio:null, soundStarted:false
 };
 
 let renderer, composer, scene, camera, clock, player, playerVisual, vehicleTemplate, vehicleWheels=[];
@@ -356,38 +355,23 @@ function buildCity() {
   buildStreetFurniture();
 }
 
-function addRamp(x,z,rotation,width=18,length=34,height=8,kind="launch") {
+function addTrainingCone(x,z,index) {
   const group=new THREE.Group();
-  group.position.set(x,0,z);group.rotation.y=rotation;
-  const positions=[
-    -width/2,0,length/2, width/2,0,length/2,
-    -width/2,height,-length/2, width/2,height,-length/2,
-    -width/2,0,-length/2, width/2,0,-length/2
-  ];
-  const indices=[0,1,2,1,3,2,0,4,1,1,4,5,0,2,4,1,5,3,2,3,5,2,5,4];
-  const geo=new THREE.BufferGeometry();
-  geo.setAttribute("position",new THREE.Float32BufferAttribute(positions,3));
-  geo.setIndex(indices);geo.computeVertexNormals();
-  const rampMat=new THREE.MeshStandardMaterial({color:kind==="boost"?0x178fa8:0x737d87,roughness:.72,metalness:.28,side:THREE.DoubleSide});
-  const mesh=new THREE.Mesh(geo,rampMat);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);
-  const sideMat=material(0xd7dadd,.75,.18);
-  for(const side of [-1,1]) {
-    const rail=box(group,.34,.65,length,sideMat,side*(width/2+.25),.55,0);
-    rail.position.y=.7;
-  }
-  const arrowMat=new THREE.MeshStandardMaterial({color:kind==="boost"?0x53f2ff:0xffbb43,emissive:kind==="boost"?0x0e7e9b:0x7b410a,emissiveIntensity:.7});
-  for(let a=0;a<3;a++) {
-    const z0=length/2-7-a*7;
-    const y0=height*(length/2-z0)/length+.08;
-    const stripe=box(group,width*.52,.08,.9,arrowMat,0,y0,z0,false);
-    stripe.rotation.x=-Math.atan2(height,length);
-  }
-  scene.add(group);
-  world.ramps.push({group,width,length,height,kind,used:false});
+  const base=material(0x252d32,.82);
+  const orange=material(index%2===0?0xff7437:0xff9b37,.72,.05);
+  const white=material(0xf0ece1,.7,.05);
+  const foot= new THREE.Mesh(new THREE.CylinderGeometry(.72,.78,.16,16),base);
+  foot.position.y=.08;group.add(foot);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(.48,1.55,16),orange);
+  cone.position.y=.92;cone.castShadow=true;group.add(cone);
+  const stripe=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.18,16),white);
+  stripe.position.y=.92;group.add(stripe);
+  group.position.set(x,.02,z);scene.add(group);
+  world.obstacles.push({x,z,radius:.95,group,hit:false});
 }
 
-function buildStuntDistrict() {
-  // A dedicated original stunt area: elevated run-ups, angled launches and a loop.
+function buildSkillDistrict() {
+  // A precision-driving practice area with a marked slalom and checkpoint lanes.
   const cx=400,cz=-400;
   const platform=new THREE.Mesh(new THREE.PlaneGeometry(132,132),material(0x4c555b,.95));
   platform.rotation.x=-Math.PI/2;platform.position.set(cx,.02,cz);platform.receiveShadow=true;scene.add(platform);
@@ -396,23 +380,28 @@ function buildStuntDistrict() {
     box(scene,1.0,.65,132,borderMat,cx+side*66,.35,cz,false);
     box(scene,132,.65,1.0,borderMat,cx,.35,cz+side*66,false);
   }
-  addRamp(cx,cz+28,0,22,38,10);
-  addRamp(cx+31,cz-22,Math.PI/2,18,30,7,"boost");
-  addRamp(cx-31,cz-22,-Math.PI/2,18,30,7);
-  addRamp(cx,cz-49,Math.PI,20,32,8,"boost");
-  const loopMat=new THREE.MeshStandardMaterial({color:0xf1a53b,metalness:.48,roughness:.35,emissive:0x6a2d07,emissiveIntensity:.18});
-  const loop=new THREE.Mesh(new THREE.TorusGeometry(19,1.5,14,92),loopMat);
-  loop.position.set(cx,21,cz-5);loop.rotation.y=Math.PI/2;loop.castShadow=true;scene.add(loop);
-  const beacon=new THREE.Mesh(new THREE.TorusGeometry(7,.22,8,42),new THREE.MeshStandardMaterial({color:0x30e5f4,emissive:0x147b8a,emissiveIntensity:1.1}));
-  beacon.position.set(cx,4,cz-50);scene.add(beacon);
-  const label=box(scene,16,3,.4,material(0x1a242c,.5,.3),cx,8,cz-61,false);
-  const glow=new THREE.Mesh(new THREE.PlaneGeometry(15,2.5),new THREE.MeshBasicMaterial({map:signTexture("STUNT ZONE","#ffbd4a"),transparent:true,side:THREE.DoubleSide}));
-  glow.position.set(cx,8,cz-60.75);scene.add(glow);
-  // Painted lane guide lines.
-  const guide=material(0x25d3e8,.4,.15,{emissive:0x0a586b,emissiveIntensity:.4});
-  for(let i=-3;i<=3;i++) {
-    box(scene,.24,.04,100,guide,cx+i*17,.06,cz,false);
+  const laneMat=new THREE.MeshStandardMaterial({color:0x31d8ed,emissive:0x0c6171,emissiveIntensity:.45,roughness:.48});
+  for(let i=-2;i<=2;i++) box(scene,.18,.035,116,laneMat,cx+i*20,.07,cz,false);
+  for(let row=0;row<7;row++) {
+    const z=cz+29-row*15;
+    const offset=(row%2===0)?-13:13;
+    addTrainingCone(cx+offset,z,row);
+    addTrainingCone(cx-offset,z,row+1);
   }
+  // Checkpoint arches guide the driver through the marked course.
+  for(let i=0;i<4;i++) {
+    const z=cz+18-i*34;
+    const x=cx+(i%2===0?-8:8);
+    const postMat=material(0xd5e0e4,.48,.5);
+    box(scene,.32,4.2,.32,postMat,x-7,2.1,z,false);
+    box(scene,.32,4.2,.32,postMat,x+7,2.1,z,false);
+    const beam=box(scene,14,.28,.4,laneMat,x,4.15,z,false);
+    const marker=new THREE.Mesh(new THREE.TorusGeometry(4.6,.12,8,32),new THREE.MeshStandardMaterial({color:0x31d8ed,emissive:0x0a7185,emissiveIntensity:.75}));
+    marker.position.set(x,2.25,z);scene.add(marker);
+  }
+  const sign=box(scene,18,3,.5,material(0x1a242c,.5,.3),cx,8,cz-61,false);
+  const glow=new THREE.Mesh(new THREE.PlaneGeometry(17,2.5),new THREE.MeshBasicMaterial({map:signTexture("SKILL COURSE","#35dff2"),transparent:true,side:THREE.DoubleSide}));
+  glow.position.set(cx,8,cz-60.72);scene.add(glow);
 }
 
 function starShape() {
@@ -500,7 +489,7 @@ function buildTraffic() {
 function buildWorld() {
   buildGroundAndRoads();
   buildCity();
-  buildStuntDistrict();
+  buildSkillDistrict();
   buildCollectibles();
   buildTraffic();
 }
@@ -697,22 +686,23 @@ function selectMode(mode) {
 document.querySelectorAll(".mode").forEach(btn=>btn.addEventListener("click",()=>selectMode(btn.dataset.mode)));
 
 function placeAtModeStart() {
-  const spawn=world.mode==="stunt"?new THREE.Vector3(400,0,-445):new THREE.Vector3(0,0,0);
+  const spawn=world.mode==="skill"?new THREE.Vector3(400,0,-330):new THREE.Vector3(0,0,0);
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
-  world.yaw=world.mode==="stunt"?0:0;
-  world.speed=0;world.verticalSpeed=0;world.air=0;world.lateral=0;world.drift=0;world.jumpCooldown=0;
+  world.velocity.set(0,0,0);
+  world.yaw=0;
+  world.speed=0;world.lateral=0;world.distance=0;
   player.rotation.set(0,world.yaw,0);
   if(world.mode==="sprint") {
     prepareRace();
     $("mission-title").textContent="CITY SPRINT";
     $("mission-sub").textContent="Pass through every checkpoint";
     toast("SPRINT START — GO!");
-  } else if(world.mode==="stunt") {
+  } else if(world.mode==="skill") {
     clearRaceGates();world.raceActive=false;
-    $("mission-title").textContent="STUNT DISTRICT";
-    $("mission-sub").textContent="Find ramps, collect stars and land clean";
-    toast("STUNT DISTRICT — SEND IT!");
+    $("mission-title").textContent="SKILL COURSE";
+    $("mission-sub").textContent="Navigate the marked cone course";
+    toast("SKILL COURSE — FOLLOW THE MARKERS");
   } else {
     clearRaceGates();world.raceActive=false;
     $("mission-title").textContent="FREE DRIVE";
@@ -775,7 +765,7 @@ function bindControls() {
   const controlMap={
     KeyW:"gas",ArrowUp:"gas",KeyS:"brake",ArrowDown:"brake",
     KeyA:"left",ArrowLeft:"left",KeyD:"right",ArrowRight:"right",
-    Space:"handbrake",ShiftLeft:"nitro",ShiftRight:"nitro"
+    Space:"brake"
   };
   window.addEventListener("keydown",e=>{
     if(controlMap[e.code]){keys[controlMap[e.code]]=true;e.preventDefault();}
@@ -805,9 +795,7 @@ function readInput() {
     gas:!!(keys.gas||input.gas),
     brake:!!(keys.brake||input.brake),
     left:!!(keys.left||input.left),
-    right:!!(keys.right||input.right),
-    handbrake:!!(keys.handbrake||input.handbrake),
-    nitro:!!(keys.nitro||input.nitro)
+    right:!!(keys.right||input.right)
   };
 }
 
@@ -830,164 +818,110 @@ function startAudio() {
 function updateAudio() {
   if(!world.audio)return;
   const ctx=world.audio.ctx;
-  const target=world.paused||!world.started?.0001:.012+Math.abs(world.speed)*.00022;
+  const target=(world.paused||!world.started)?0.0001:(0.012+Math.abs(world.speed)*0.00022);
   world.audio.gain.gain.setTargetAtTime(target,ctx.currentTime,.08);
-  world.audio.osc.frequency.setTargetAtTime(48+Math.abs(world.speed)*2.2+(input.nitro?35:0),ctx.currentTime,.06);
+  world.audio.osc.frequency.setTargetAtTime(48+Math.abs(world.speed)*2.2,ctx.currentTime,.06);
   world.audio.filter.frequency.setTargetAtTime(180+Math.abs(world.speed)*10,ctx.currentTime,.08);
 }
 
-function localPoint(group,point) {
-  group.updateMatrixWorld(true);
-  return group.worldToLocal(point.clone());
-}
-function checkRampTakeoff() {
-  if(world.jumpCooldown>0||world.air>.12||Math.abs(world.speed)<12)return;
-  for(const ramp of world.ramps) {
-    const local=localPoint(ramp.group,player.position);
-    if(Math.abs(local.x)<ramp.width*.46 && local.z < -ramp.length*.32 && local.z > -ramp.length*.55) {
-      const forward=new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
-      const rampForward=new THREE.Vector3(0,0,-1).applyAxisAngle(new THREE.Vector3(0,1,0),ramp.group.rotation.y);
-      if(forward.dot(rampForward)<.55)continue;
-      world.verticalSpeed=7.2+Math.min(5.6,Math.abs(world.speed)*.105);
-      world.jumpCooldown=2.0;
-      world.jumpFlash=1;
-      toast(ramp.kind==="boost"?"BOOST RAMP — AIR TIME!":"BIG AIR!",1.5);
-      break;
-    }
-  }
-}
 function updatePhysics(dt) {
   if(!player)return;
   const controls=readInput();
   const spec=cars[currentCarIndex];
   const forward=new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
   const right=new THREE.Vector3(Math.cos(world.yaw),0,Math.sin(world.yaw));
-  let forwardSpeed=world.velocity?world.velocity.dot(forward):world.speed;
-  if(!world.velocity)world.velocity=new THREE.Vector3();
-  forwardSpeed=world.velocity.dot(forward);
+  const forwardSpeed=world.velocity.dot(forward);
   let lateralSpeed=world.velocity.dot(right);
-  const boosting=controls.nitro && controls.gas && world.nitro>0;
   const throttle=controls.gas?1:0;
-  const maxForward=spec.top/3.6*(boosting?1.17:1);
-  const acceleration=spec.power*(boosting?1.55:1);
-
-  if(throttle>0) {
-    world.velocity.addScaledVector(forward,acceleration*dt);
-  }
+  const maxForward=spec.top/3.6;
+  if(throttle) world.velocity.addScaledVector(forward,spec.power*dt);
   if(controls.brake) {
-    if(forwardSpeed>1.0) world.velocity.addScaledVector(forward,-34*dt);
-    else world.velocity.addScaledVector(forward,-spec.power*.62*dt);
+    if(forwardSpeed>1.0) world.velocity.addScaledVector(forward,-36*dt);
+    else world.velocity.addScaledVector(forward,-spec.power*.56*dt);
   }
-  const handbrake=controls.handbrake;
-  const grip=handbrake?1.5:spec.grip;
+
+  // Keep lateral response predictable: grip is applied every frame, not only while steering.
   lateralSpeed=world.velocity.dot(right);
-  world.velocity.addScaledVector(right,-lateralSpeed*Math.min(1,grip*dt));
-  const drag=controls.gas?.9986:.9915;
+  world.velocity.addScaledVector(right,-lateralSpeed*Math.min(1,spec.grip*dt));
+  const drag=throttle?.9988:.991;
   world.velocity.multiplyScalar(Math.pow(drag,dt*60));
-  forwardSpeed=world.velocity.dot(forward);
-  if(forwardSpeed>maxForward)world.velocity.addScaledVector(forward,maxForward-forwardSpeed);
-  if(forwardSpeed<-17)world.velocity.addScaledVector(forward,-17-forwardSpeed);
-  lateralSpeed=world.velocity.dot(right);
-  const totalSpeed=world.velocity.length();
+  let speedAlong=world.velocity.dot(forward);
+  if(speedAlong>maxForward)world.velocity.addScaledVector(forward,maxForward-speedAlong);
+  if(speedAlong<-15)world.velocity.addScaledVector(forward,-15-speedAlong);
+  speedAlong=world.velocity.dot(forward);
+
   const steering=(controls.right?1:0)-(controls.left?1:0);
-  const speedFactor=clamp(Math.abs(forwardSpeed)/8,0,1);
-  const reverse=forwardSpeed<-.4?-1:1;
-  const steerStrength=spec.steer*(handbrake?1.18:1)*(.17+speedFactor*.83);
-  world.yaw+=steering*steerStrength*reverse*dt;
-  world.speed=world.velocity.length()*(forwardSpeed<0?-1:1);
+  const speedFactor=clamp(Math.abs(speedAlong)/9,0,1);
+  const reverse=speedAlong<-.4?-1:1;
+  world.yaw+=steering*spec.steer*(.14+speedFactor*.86)*reverse*dt;
+  world.speed=world.velocity.length()*(speedAlong<0?-1:1);
   world.steering=steering;
-  world.lateral=lateralSpeed;
-  world.drift=damp(world.drift,handbrake&&totalSpeed>9?1:0,5,dt);
-
-  // Nitro drains only while accelerating and refills slowly when released.
-  if(boosting) {
-    world.nitro=Math.max(0,world.nitro-22*dt);
-    world.score+=Math.floor(Math.abs(forwardSpeed)*dt*.06);
-  } else world.nitro=Math.min(100,world.nitro+6.5*dt);
-
-  // Ground and air simulation.
-  world.jumpCooldown=Math.max(0,world.jumpCooldown-dt);
-  if(world.air>0 || world.verticalSpeed>0) {
-    world.verticalSpeed-=18.5*dt;
-    world.air=Math.max(0,world.air+world.verticalSpeed*dt);
-    if(world.air===0) {
-      world.verticalSpeed=0;
-      toast("CLEAN LANDING",.9);
-      world.score+=Math.round(Math.abs(forwardSpeed)*3);
-    }
-  } else {
-    world.air=0;world.verticalSpeed=0;
-    checkRampTakeoff();
-  }
+  world.lateral=world.velocity.dot(right);
 
   const old=player.position.clone();
-  const motion=world.velocity.clone().multiplyScalar(dt);
-  player.position.add(motion);
-  player.position.y=world.air;
+  player.position.addScaledVector(world.velocity,dt);
+  player.position.y=0;
 
-  // Keep the driving area bounded and recover if the car leaves the playable region.
+  // Stay within the designed city limits.
   if(Math.abs(player.position.x)>WORLD_LIMIT||Math.abs(player.position.z)>WORLD_LIMIT) {
     player.position.copy(old);world.velocity.multiplyScalar(-.16);toast("CITY LIMIT — TURN BACK",1);
   }
-  // Buildings use simple oriented city-block bounds. Roads and open plazas remain free.
+
+  // Building collision.
   let collision=false;
   for(const b of world.buildings) {
     if(Math.abs(player.position.x-b.x)<b.w*.5+1.45 && Math.abs(player.position.z-b.z)<b.d*.5+2.35) {
       collision=true;break;
     }
   }
-  if(collision && world.air<1.0) {
+  if(collision) {
     player.position.x=old.x;player.position.z=old.z;
     world.velocity.multiplyScalar(-.28);
     world.score=Math.max(0,world.score-2);
-    if(Math.abs(forwardSpeed)>7)toast("IMPACT — WATCH THE ROAD",1.1);
+    if(Math.abs(speedAlong)>7)toast("IMPACT — WATCH THE ROAD",1.1);
   }
 
-  // Traffic is visual, but bumping into a car slows the player instead of phasing through it.
+  // Cones in the practice district are solid visual obstacles.
+  for(const obstacle of world.obstacles) {
+    if(obstacle.hit)continue;
+    const dx=player.position.x-obstacle.x,dz=player.position.z-obstacle.z;
+    if(dx*dx+dz*dz<(obstacle.radius+1.0)*(obstacle.radius+1.0)) {
+      player.position.x=old.x;player.position.z=old.z;
+      world.velocity.multiplyScalar(-.22);
+      obstacle.hit=true;scene.remove(obstacle.group);
+      toast("CONE HIT — TRY A CLEAN LINE",1.1);
+    }
+  }
+
+  // Traffic shares the city roads and gently slows the player on contact.
   for(const t of world.traffic) {
     const dx=player.position.x-t.group.position.x;
     const dz=player.position.z-t.group.position.z;
-    if(dx*dx+dz*dz<8.5 && world.air<1) {
+    if(dx*dx+dz*dz<8.5) {
       player.position.copy(old);world.velocity.multiplyScalar(-.18);toast("TRAFFIC CONTACT",.8);
     }
   }
 
   player.rotation.y=world.yaw;
-  player.rotation.z=damp(player.rotation.z,-steering*world.drift*.085,5,dt);
-  player.rotation.x=damp(player.rotation.x,world.air>0?-.06:0,3,dt);
-  if(playerLight)playerLight.intensity=boosting?2.8:1.25;
+  player.rotation.z=damp(player.rotation.z,-steering*.035,5,dt);
+  player.rotation.x=damp(player.rotation.x,0,3,dt);
+  if(playerLight)playerLight.intensity=1.25;
 
-  const wheels=vehicleWheels;
-  wheels.forEach(w=>{
+  vehicleWheels.forEach(w=>{
     if(w.mesh) {
-      w.mesh.rotation.x-=forwardSpeed*dt/.34;
-      if(w.front)w.mesh.rotation.y=steering*.28;
+      w.mesh.rotation.x-=speedAlong*dt/.34;
+      if(w.front)w.mesh.rotation.y=steering*.22;
     }
   });
-  const dist=player.position.distanceTo(world.prevPosition);
-  world.distance+=dist;
-  world.prevPosition.copy(player.position);
-  if(world.jumpFlash>0)world.jumpFlash=Math.max(0,world.jumpFlash-dt*1.7);
 
+  world.distance+=player.position.distanceTo(old);
+  world.prevPosition.copy(player.position);
   collectStars();
   updateRace();
-  updateHUD(forwardSpeed,boosting);
+  updateHUD(speedAlong);
 }
 
-function collectStars() {
-  for(const s of world.stars) {
-    if(!s.active)continue;
-    s.group.rotation.y+=.014;
-    s.group.position.y=s.group.userData.baseY+Math.sin(performance.now()*.0018+s.group.userData.id)*.22;
-    if(s.group.position.distanceTo(player.position.clone().setY(s.group.position.y))<3.3) {
-      s.active=false;scene.remove(s.group);
-      world.collected++;world.score+=100;
-      const el=$("star-count");el.textContent=world.collected;
-      $("score-count").textContent=world.score.toLocaleString();
-      toast("+1 STAR  ·  +100",1.05);
-    }
-  }
-}
+function
 function updateRace() {
   if(!world.raceActive || !world.gates[world.raceIndex])return;
   const gate=world.gates[world.raceIndex];
@@ -1009,12 +943,11 @@ function updateRace() {
   }
 }
 
-function updateHUD(forwardSpeed,boosting) {
+function updateHUD(forwardSpeed) {
   $("speed").textContent=String(Math.round(Math.abs(forwardSpeed)*3.6)).padStart(3,"0");
   const kmh=Math.abs(forwardSpeed)*3.6;
   $("gear").textContent=forwardSpeed<-.7?"R":kmh<3?"N":String(clamp(Math.floor(kmh/48)+1,1,7));
-  $("nitro-fill").style.width=world.nitro+"%";
-  $("nitro-pct").textContent=Math.round(world.nitro)+"%";
+  $("distance-count").textContent=(world.distance/1000).toFixed(1);
   $("score-count").textContent=world.score.toLocaleString();
   $("star-count").textContent=world.collected;
   if(world.raceActive) {
@@ -1052,7 +985,7 @@ function updateCamera(dt) {
     desired=player.position.clone().addScaledVector(forward,-distance);
     desired.y+=height+Math.min(2,Math.abs(world.speed)*.018);
     target=player.position.clone().addScaledVector(forward,7.5);
-    target.y+=1.4+world.air*.12;
+    target.y+=1.4;
   }
   const follow=1-Math.exp(-4.4*dt);
   camera.position.lerp(desired,follow);
@@ -1073,7 +1006,7 @@ function drawMiniMap() {
     ctx.beginPath();ctx.moveTo(0,q);ctx.lineTo(w,q);ctx.stroke();
   }
   ctx.fillStyle="#68835e";
-  ctx.fillRect((340+600)/1200*w,( -470+600)/1200*h,120/1200*w*1200,120/1200*h*1200);
+  ctx.fillRect((340+600)/1200*w,(-470+600)/1200*h,(120/1200)*w,(120/1200)*h);
   for(const s of world.stars)if(s.active) {
     const x=(s.group.position.x+600)/1200*w,y=(s.group.position.z+600)/1200*h;
     ctx.fillStyle="#ffc654";ctx.beginPath();ctx.arc(x,y,2.7,0,Math.PI*2);ctx.fill();
@@ -1095,7 +1028,7 @@ function tick() {
     updateCamera(dt);
     drawMiniMap();
     updateAudio();
-  } else if(player) {
+  } else if(!world.started && player) {
     previewTime+=dt*.18;
     camera.position.set(Math.sin(previewTime)*13,6.4,Math.cos(previewTime)*15);
     camera.lookAt(0,0,0);
@@ -1126,7 +1059,7 @@ async function init() {
 
     setLoading(14,"BUILDING CITY STREETS…");
     buildWorld();
-    setLoading(26,"ADDING STUNT AREAS…");
+    setLoading(26,"ADDING CITY ACTIVITIES…");
     await loadCarModel();
     setLoading(74,"PREPARING GARAGE…");
     updateGarage();
@@ -1139,6 +1072,7 @@ async function init() {
     loadingDone=true;
     $("start-button").disabled=false;
     $("start-button").textContent="START DRIVING  →";
+    setLoading(100,"READY TO DRIVE");
     $("loading").style.display="none";
     $("mission-title").textContent="FREE DRIVE";
     tick();
