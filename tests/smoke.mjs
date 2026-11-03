@@ -12,11 +12,28 @@ page.on("pageerror", error => pageErrors.push(error.message));
 const state = () => page.evaluate(() => window.__turboCityDebug?.());
 
 try {
+  const browserConsole = [];
+  page.on("console", message => {
+    if (message.type() === "error" || message.type() === "warning") {
+      browserConsole.push(message.type() + ": " + message.text());
+    }
+  });
   await page.goto("http://127.0.0.1:4173/?ciDebug=1", { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForFunction(() => {
-    const button = document.querySelector("#start-button");
-    return button && !button.disabled;
-  }, { timeout: 40000 });
+  try {
+    await page.waitForFunction(() => {
+      const button = document.querySelector("#start-button");
+      return button && !button.disabled;
+    }, { timeout: 40000 });
+  } catch (error) {
+    console.log("INIT FAILURE TRACE:", {
+      loadText: await page.locator("#loadtext").textContent().catch(() => "missing"),
+      loadingVisible: await page.locator("#loading").isVisible().catch(() => false),
+      startDisabled: await page.locator("#start-button").isDisabled().catch(() => true),
+      pageErrors,
+      browserConsole
+    });
+    throw error;
+  }
 
   assert.equal(await page.locator("#loading").isVisible(), false, "loading overlay should disappear");
   assert.ok(await page.locator("#game canvas").count(), "3D canvas should be created");
