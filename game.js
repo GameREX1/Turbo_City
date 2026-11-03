@@ -1034,10 +1034,13 @@ function updatePhysics(dt) {
     if(forwardSpeed>0.05) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,34*dt));
     else if(forwardSpeed<-.05) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,34*dt));
   } else if(controls.reverse) {
-    // S / Down first slows the car, then gently engages reverse.
-    if(forwardSpeed>0.8) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,28*dt));
-    else if(forwardSpeed<-.8) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,22*dt));
-    else world.velocity.addScaledVector(forward,-spec.power*.5*dt);
+    // S / Down first brakes forward motion, then continues accelerating backwards.
+    // Do not brake the car again after it has already entered reverse.
+    if(forwardSpeed>0.8) {
+      world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,28*dt));
+    } else {
+      world.velocity.addScaledVector(forward,-spec.power*.5*dt);
+    }
   }
 
   // Keep lateral response predictable: grip is applied every frame, not only while steering.
