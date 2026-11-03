@@ -34,7 +34,7 @@ const world = {
   velocity:new THREE.Vector3(), steering:0, audio:null, soundStarted:false
 };
 
-let renderer, composer, scene, camera, clock, player, playerVisual, vehicleTemplate, vehicleWheels=[];
+let renderer, composer, scene, camera, clock, player, playerVisual, vehicleTemplate, vehicleWheels=[], brakeLights=[];
 let playerMaterial, playerLight, pmrem, previewTime=0, lastFrame=0, loadingDone=false;
 let fallbackCar = false;
 let currentCarIndex = 0;
@@ -643,6 +643,7 @@ function makePlayerVehicle(index) {
   const root=new THREE.Group();
   root.name="TurboCityPlayerCar";
   vehicleWheels=[];
+  brakeLights=[];
   if(vehicleTemplate) {
     const normal=normaliseModel(vehicleTemplate);
     applyVehicleMaterials(normal.model,index);
@@ -656,8 +657,23 @@ function makePlayerVehicle(index) {
     const fallback=buildFallbackVehicle();
     root.add(fallback);
   }
-  const shadow=new THREE.Mesh(new THREE.CircleGeometry(2.15,32),new THREE.MeshBasicMaterial({color:0x06111b,transparent:true,opacity:.22,depthWrite:false}));
-  shadow.rotation.x=-Math.PI/2;shadow.position.y=.02;root.add(shadow);
+  const aoTexture=new THREE.TextureLoader().load("https://threejs.org/examples/models/gltf/ferrari_ao.png");
+  aoTexture.colorSpace=THREE.NoColorSpace;
+  const aoShadow=new THREE.Mesh(
+    new THREE.PlaneGeometry(2.62,5.2),
+    new THREE.MeshBasicMaterial({map:aoTexture,blending:THREE.MultiplyBlending,transparent:true,opacity:.48,toneMapped:false,depthWrite:false})
+  );
+  aoShadow.rotation.x=-Math.PI/2;aoShadow.position.y=.025;aoShadow.renderOrder=2;root.add(aoShadow);
+  const fallbackShadow=new THREE.Mesh(new THREE.CircleGeometry(2.15,32),new THREE.MeshBasicMaterial({color:0x06111b,transparent:true,opacity:.14,depthWrite:false}));
+  fallbackShadow.rotation.x=-Math.PI/2;fallbackShadow.position.y=.018;root.add(fallbackShadow);
+
+  const rearLampMat=new THREE.MeshStandardMaterial({color:0x8c1825,emissive:0xff1834,emissiveIntensity:.75,roughness:.3});
+  for(const side of [-1,1]) {
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(.48,.14,.08),rearLampMat.clone());
+    lamp.position.set(side*.66,.78,2.23);root.add(lamp);brakeLights.push(lamp);
+    const exhaust=new THREE.Mesh(new THREE.CylinderGeometry(.095,.11,.22,12),material(0x69737b,.24,.88));
+    exhaust.rotation.x=Math.PI/2;exhaust.position.set(side*.47,.36,2.25);root.add(exhaust);
+  }
   playerLight=new THREE.PointLight(cars[index].color,1.35,7);
   playerLight.position.set(0,.35,0);root.add(playerLight);
   root.traverse(obj=>{if(obj.isMesh)obj.frustumCulled=true;});
@@ -690,6 +706,7 @@ async function loadCarModel() {
     draco.dispose();
   } catch(err) {
     console.warn("Vehicle model could not be loaded. Using the built-in vehicle model.",err);
+    draco.dispose();
     vehicleTemplate=null;
     fallbackCar=true;
   }
@@ -869,6 +886,7 @@ function updateAudio() {
 function updatePhysics(dt) {
   if(!player)return;
   const controls=readInput();
+  brakeLights.forEach(lamp=>{lamp.material.emissiveIntensity=controls.brake?3.2:.75;});
   const spec=cars[currentCarIndex];
   const forward=new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
   const right=new THREE.Vector3(Math.cos(world.yaw),0,Math.sin(world.yaw));
