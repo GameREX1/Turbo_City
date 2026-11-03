@@ -672,9 +672,19 @@ async function loadCarModel() {
   loader.setDRACOLoader(draco);
   try {
     setLoading(28,"LOADING VEHICLE MODEL…");
-    const gltf=await loader.loadAsync(CAR_MODEL_URL,undefined,(event)=>{
+    let timeoutId;
+    const modelRequest=loader.loadAsync(CAR_MODEL_URL,(event)=>{
       if(event.total)setLoading(28+Math.round(event.loaded/event.total*18),"LOADING VEHICLE MODEL…");
     });
+    const modelTimeout=new Promise((_,reject)=>{
+      timeoutId=window.setTimeout(()=>reject(new Error("Vehicle model load timed out")),12000);
+    });
+    let gltf;
+    try {
+      gltf=await Promise.race([modelRequest,modelTimeout]);
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     vehicleTemplate=gltf.scene.children[0]||gltf.scene;
     vehicleTemplate.traverse(obj=>{if(obj.isMesh){obj.castShadow=true;obj.receiveShadow=true;}});
     draco.dispose();
