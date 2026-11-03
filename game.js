@@ -387,7 +387,7 @@ async function init() {
     buildingSystem=createBuildingModule({scene,world,ROAD_SPACING,material,box,cylinder,rand});
     activitySystem=createActivityModule({scene,world,material,box,cylinder,signTexture:buildingSystem.signTexture,toast,getPlayer:()=>player});
     trafficSystem=createTrafficModule({scene,world,material,box,rand});
-    vehicleSystem=createVehicleModule({scene,material,box,cylinder,cars,getCurrentCarIndex:()=>currentCarIndex,setLoading});
+    vehicleSystem=createVehicleModule({scene,material,box,cylinder,cars,getCurrentCarIndex:()=>currentCarIndex,isSmokeMode,setLoading});
     controlSystem=createControlsModule({input,keys,world,recoverCar,toggleCamera,pauseGame});
     drivingSystem=createDrivingModule({world,cars,getCurrentCarIndex:()=>currentCarIndex,getPlayer:()=>player,vehicle:vehicleSystem,getReadInput:()=>controlSystem.readInput,toast,damp,clamp,collectStars:activitySystem.collectStars,$});
     cameraSystem=createCameraModule({world,getPlayer:()=>player,getCamera:()=>camera,ROAD_SPACING,clamp,damp,$});
