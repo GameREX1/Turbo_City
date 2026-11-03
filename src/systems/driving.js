@@ -123,10 +123,8 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     if(playerLight)playerLight.intensity=1.25;
   
     vehicleWheels.forEach(w=>{
-      if(w.mesh) {
-        w.mesh.rotation.x-=speedAlong*dt/.34;
-        if(w.front)w.mesh.rotation.y=-steering*.22;
-      }
+      if(w.wheel)w.wheel.rotation.x-=speedAlong*dt/Math.max(.24,w.wheel.geometry.parameters.radiusTop||.34);
+      if(w.front&&w.pivot)w.pivot.rotation.y=-steering*.30;
     });
   
     world.distance+=player.position.distanceTo(old);
