@@ -205,7 +205,7 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
       if((gx===2 && gz===-3) || parkBlocks.has(gx+","+gz)) continue;
       const cx=gx*ROAD_SPACING+ROAD_SPACING/2;
       const cz=gz*ROAD_SPACING+ROAD_SPACING/2;
-      const n=2+(seed%3);
+      const n=1+(seed%3);
       for(let k=0;k<n;k++) {
         seed=(seed*9301+49297)%233280;
         const x=cx+(((seed*17)%47)-23);
