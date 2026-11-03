@@ -24,14 +24,14 @@ const cars = [
   { name:"RAX SOLAR", type:"HYPER SPORT CONCEPT", color:0xffa52c, top:342, accel:99, handling:91, power:31.5, grip:8.6, steer:1.98, wing:3 }
 ];
 
-const input = { gas:false, brake:false, left:false, right:false };
+const input = { gas:false, brake:false, reverse:false, left:false, right:false };
 const keys = Object.create(null);
 const world = {
   buildings: [], lamps: [], stars: [], obstacles: [], gates: [], traffic: [], windows: [],
   citySeed: 7183, score:0, collected:0, raceActive:false, raceStart:0, raceIndex:0,
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
-  velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), steering:0, audio:null, soundStarted:false
+  velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false
 };
 
 let renderer, composer, scene, camera, clock, player, playerVisual, vehicleTemplate, vehicleWheels=[], brakeLights=[];
@@ -135,7 +135,7 @@ function buildRenderer() {
     stencil: false,
     depth: true
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth<800 ? 1.35 : 1.8));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth<800 ? 1.5 : 2));
   renderer.setSize(window.innerWidth,window.innerHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -760,6 +760,8 @@ function placeAtModeStart() {
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
+  world.safeYaw=0;
+  world.safeTimer=0;
   world.velocity.set(0,0,0);
   world.yaw=0;
   world.speed=0;world.lateral=0;world.distance=0;
@@ -828,15 +830,17 @@ function toggleCamera() {
 function recoverCar() {
   if(!player)return;
   player.position.copy(world.safePosition);
+  world.yaw=world.safeYaw;
   world.velocity.set(0,0,0);
   world.speed=0;world.lateral=0;
-  player.rotation.set(0,world.yaw,0);
+  world.safeTimer=0;
+  player.rotation.set(0,world.safeYaw,0);
   toast("VEHICLE RECOVERED");
 }
 
 function bindControls() {
   const controlMap={
-    KeyW:"gas",ArrowUp:"gas",KeyS:"brake",ArrowDown:"brake",
+    KeyW:"gas",ArrowUp:"gas",KeyS:"reverse",ArrowDown:"reverse",
     KeyA:"left",ArrowLeft:"left",KeyD:"right",ArrowRight:"right",
     Space:"brake"
   };
@@ -866,7 +870,8 @@ function bindControls() {
 function readInput() {
   return {
     gas:!!(keys.KeyW||keys.ArrowUp||input.gas),
-    brake:!!(keys.KeyS||keys.ArrowDown||keys.Space||input.brake),
+    brake:!!(keys.Space||input.brake),
+    reverse:!!(keys.KeyS||keys.ArrowDown||input.reverse),
     left:!!(keys.KeyA||keys.ArrowLeft||input.left),
     right:!!(keys.KeyD||keys.ArrowRight||input.right)
   };
@@ -900,19 +905,24 @@ function updateAudio() {
 function updatePhysics(dt) {
   if(!player)return;
   const controls=readInput();
-  brakeLights.forEach(lamp=>{lamp.material.emissiveIntensity=controls.brake?3.2:.75;});
+  brakeLights.forEach(lamp=>{lamp.material.emissiveIntensity=(controls.brake||controls.reverse)?3.2:.75;});
   const spec=cars[currentCarIndex];
   const forward=new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
   const right=new THREE.Vector3(Math.cos(world.yaw),0,Math.sin(world.yaw));
   const forwardSpeed=world.velocity.dot(forward);
   let lateralSpeed=world.velocity.dot(right);
-  const throttle=controls.gas?1:0;
+  const throttle=controls.gas&&!controls.brake&&!controls.reverse?1:0;
   const maxForward=spec.top/3.6;
   if(throttle) world.velocity.addScaledVector(forward,spec.power*dt);
   if(controls.brake) {
-    if(forwardSpeed>1.0) world.velocity.addScaledVector(forward,-30*dt);
-    else if(forwardSpeed<-.8) world.velocity.addScaledVector(forward,30*dt);
-    else world.velocity.addScaledVector(forward,-spec.power*.52*dt);
+    // Space is a brake only. It never unexpectedly sends the car into reverse.
+    if(forwardSpeed>0.05) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,34*dt));
+    else if(forwardSpeed<-.05) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,34*dt));
+  } else if(controls.reverse) {
+    // S / Down first slows the car, then gently engages reverse.
+    if(forwardSpeed>0.8) world.velocity.addScaledVector(forward,-Math.min(forwardSpeed,28*dt));
+    else if(forwardSpeed<-.8) world.velocity.addScaledVector(forward,Math.min(-forwardSpeed,22*dt));
+    else world.velocity.addScaledVector(forward,-spec.power*.5*dt);
   }
 
   // Keep lateral response predictable: grip is applied every frame, not only while steering.
@@ -926,20 +936,23 @@ function updatePhysics(dt) {
   speedAlong=world.velocity.dot(forward);
 
   const steering=(controls.right?1:0)-(controls.left?1:0);
-  const speedFactor=clamp(Math.abs(speedAlong)/9,0,1);
+  const speedFactor=clamp(Math.abs(speedAlong)/10,0,1);
   const reverse=speedAlong<-.4?-1:1;
-  world.yaw+=steering*spec.steer*(.12+speedFactor*.62)*reverse*dt;
+  // Steering fades to zero when stopped, so the car cannot spin in place.
+  const steeringResponse=speedFactor===0?0:.16+speedFactor*.58;
+  world.yaw+=steering*spec.steer*steeringResponse*reverse*dt;
   world.speed=world.velocity.length()*(speedAlong<0?-1:1);
   world.steering=steering;
   world.lateral=world.velocity.dot(right);
 
   const old=player.position.clone();
+  let hitSomething=false;
   player.position.addScaledVector(world.velocity,dt);
   player.position.y=0;
 
   // Stay within the designed city limits.
   if(Math.abs(player.position.x)>WORLD_LIMIT||Math.abs(player.position.z)>WORLD_LIMIT) {
-    player.position.copy(old);world.velocity.multiplyScalar(-.16);toast("CITY LIMIT — TURN BACK",1);
+    player.position.copy(old);world.velocity.multiplyScalar(-.16);hitSomething=true;toast("CITY LIMIT — TURN BACK",1);
   }
 
   // Building collision.
@@ -952,6 +965,7 @@ function updatePhysics(dt) {
   if(collision) {
     player.position.x=old.x;player.position.z=old.z;
     world.velocity.multiplyScalar(-.28);
+    hitSomething=true;
     world.score=Math.max(0,world.score-2);
     if(Math.abs(speedAlong)>7)toast("IMPACT — WATCH THE ROAD",1.1);
   }
@@ -963,6 +977,7 @@ function updatePhysics(dt) {
     if(dx*dx+dz*dz<(obstacle.radius+1.0)*(obstacle.radius+1.0)) {
       player.position.x=old.x;player.position.z=old.z;
       world.velocity.multiplyScalar(-.22);
+      hitSomething=true;
       obstacle.hit=true;obstacle.group.visible=false;
       toast("CONE HIT — TRY A CLEAN LINE",1.1);
     }
@@ -973,7 +988,7 @@ function updatePhysics(dt) {
     const dx=player.position.x-t.group.position.x;
     const dz=player.position.z-t.group.position.z;
     if(dx*dx+dz*dz<18.0) {
-      player.position.copy(old);world.velocity.multiplyScalar(-.18);toast("TRAFFIC CONTACT",.8);
+      player.position.copy(old);world.velocity.multiplyScalar(-.18);hitSomething=true;toast("TRAFFIC CONTACT",.8);
     }
   }
 
@@ -991,7 +1006,16 @@ function updatePhysics(dt) {
 
   world.distance+=player.position.distanceTo(old);
   world.prevPosition.copy(player.position);
-  world.safePosition.copy(player.position);
+  if(hitSomething) {
+    world.safeTimer=0;
+  } else {
+    world.safeTimer+=dt;
+    if(world.safeTimer>=.75) {
+      world.safePosition.copy(player.position);
+      world.safeYaw=world.yaw;
+      world.safeTimer=0;
+    }
+  }
   collectStars();
   updateRace();
   updateHUD(speedAlong);
@@ -1042,6 +1066,7 @@ function updateTraffic(dt) {
     if(t.z>520)t.z=-520;
     if(t.z<-520)t.z=520;
     t.group.position.z=t.z;
+    if(t.wheels) t.wheels.forEach(w=>{w.rotation.x+=t.speed*t.direction*dt/.34;});
   }
 }
 function updateCamera(dt) {
@@ -1110,6 +1135,7 @@ function drawMiniMap() {
 function tick() {
   requestAnimationFrame(tick);
   const dt=Math.min(clock.getDelta(),.04);
+  animateCollectibles(dt);
   if(world.started && !world.paused) {
     updatePhysics(dt);
     updateTraffic(dt);
@@ -1129,7 +1155,7 @@ function onResize() {
   if(!renderer)return;
   camera.aspect=window.innerWidth/window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,window.innerWidth<800?1.35:1.8));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,window.innerWidth<800?1.5:2));
   renderer.setSize(window.innerWidth,window.innerHeight);
   if(composer)composer.setSize(window.innerWidth,window.innerHeight);
 }
