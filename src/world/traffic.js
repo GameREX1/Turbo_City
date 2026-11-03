@@ -41,7 +41,6 @@ export function createTrafficModule({ scene, world, material, rand }) {
   }
 
   function refreshTrafficMatrices() {
-    for(const mesh of trafficMeshes.bodies)if(mesh)mesh.count=0;
     const bodySlots=bodyCounts.map(()=>0);
     records.forEach(record=>{
       const bodyMesh=trafficMeshes.bodies[record.colorIndex];
