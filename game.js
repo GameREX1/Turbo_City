@@ -31,7 +31,7 @@ const world = {
   citySeed: 7183, score:0, collected:0, raceActive:false, raceStart:0, raceIndex:0,
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
-  velocity:new THREE.Vector3(), steering:0, audio:null, soundStarted:false
+  velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), steering:0, audio:null, soundStarted:false
 };
 
 let renderer, composer, scene, camera, clock, player, playerVisual, vehicleTemplate, vehicleWheels=[], brakeLights=[];
@@ -759,6 +759,7 @@ function placeAtModeStart() {
   const spawn=world.mode==="skill"?new THREE.Vector3(400,0,-330):new THREE.Vector3(0,0,0);
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
+  world.safePosition.copy(spawn);
   world.velocity.set(0,0,0);
   world.yaw=0;
   world.speed=0;world.lateral=0;world.distance=0;
@@ -826,7 +827,7 @@ function toggleCamera() {
 }
 function recoverCar() {
   if(!player)return;
-  player.position.set(world.prevPosition.x,0,world.prevPosition.z);
+  player.position.copy(world.safePosition);
   world.velocity.set(0,0,0);
   world.speed=0;world.lateral=0;
   player.rotation.set(0,world.yaw,0);
@@ -990,6 +991,7 @@ function updatePhysics(dt) {
 
   world.distance+=player.position.distanceTo(old);
   world.prevPosition.copy(player.position);
+  world.safePosition.copy(player.position);
   collectStars();
   updateRace();
   updateHUD(speedAlong);
