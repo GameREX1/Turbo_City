@@ -800,34 +800,34 @@ function bindControls() {
     Space:"brake"
   };
   window.addEventListener("keydown",e=>{
-    if(controlMap[e.code]){keys[controlMap[e.code]]=true;e.preventDefault();}
+    if(controlMap[e.code]){keys[e.code]=true;e.preventDefault();}
     if(e.code==="KeyR" && world.started)recoverCar();
     if(e.code==="KeyC" && world.started)toggleCamera();
     if(e.code==="Escape" && world.started){pauseGame();e.preventDefault();}
     if(e.code==="Enter" && world.paused)pauseGame(false);
   });
-  window.addEventListener("keyup",e=>{if(controlMap[e.code])keys[controlMap[e.code]]=false;});
+  window.addEventListener("keyup",e=>{if(controlMap[e.code])keys[e.code]=false;});
   window.addEventListener("blur",()=>{
     Object.keys(keys).forEach(k=>keys[k]=false);
     Object.keys(input).forEach(k=>input[k]=false);
   });
   document.querySelectorAll("[data-action]").forEach(btn=>{
     const action=btn.dataset.action;
-    const down=e=>{e.preventDefault();input[action]=true;btn.classList.add("active");};
+    const down=e=>{e.preventDefault();if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);input[action]=true;btn.classList.add("active");};
     const up=e=>{e.preventDefault();input[action]=false;btn.classList.remove("active");};
     btn.addEventListener("pointerdown",down);
     btn.addEventListener("pointerup",up);
     btn.addEventListener("pointercancel",up);
-    btn.addEventListener("pointerleave",up);
+    btn.addEventListener("lostpointercapture",up);
   });
 }
 
 function readInput() {
   return {
-    gas:!!(keys.gas||input.gas),
-    brake:!!(keys.brake||input.brake),
-    left:!!(keys.left||input.left),
-    right:!!(keys.right||input.right)
+    gas:!!(keys.KeyW||keys.ArrowUp||input.gas),
+    brake:!!(keys.KeyS||keys.ArrowDown||keys.Space||input.brake),
+    left:!!(keys.KeyA||keys.ArrowLeft||input.left),
+    right:!!(keys.KeyD||keys.ArrowRight||input.right)
   };
 }
 
@@ -868,8 +868,9 @@ function updatePhysics(dt) {
   const maxForward=spec.top/3.6;
   if(throttle) world.velocity.addScaledVector(forward,spec.power*dt);
   if(controls.brake) {
-    if(forwardSpeed>1.0) world.velocity.addScaledVector(forward,-36*dt);
-    else world.velocity.addScaledVector(forward,-spec.power*.56*dt);
+    if(forwardSpeed>1.0) world.velocity.addScaledVector(forward,-30*dt);
+    else if(forwardSpeed<-.8) world.velocity.addScaledVector(forward,30*dt);
+    else world.velocity.addScaledVector(forward,-spec.power*.52*dt);
   }
 
   // Keep lateral response predictable: grip is applied every frame, not only while steering.
@@ -885,7 +886,7 @@ function updatePhysics(dt) {
   const steering=(controls.right?1:0)-(controls.left?1:0);
   const speedFactor=clamp(Math.abs(speedAlong)/9,0,1);
   const reverse=speedAlong<-.4?-1:1;
-  world.yaw+=steering*spec.steer*(.14+speedFactor*.86)*reverse*dt;
+  world.yaw+=steering*spec.steer*(.12+speedFactor*.62)*reverse*dt;
   world.speed=world.velocity.length()*(speedAlong<0?-1:1);
   world.steering=steering;
   world.lateral=world.velocity.dot(right);
