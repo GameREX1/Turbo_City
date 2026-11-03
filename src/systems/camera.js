@@ -21,10 +21,13 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
       target=player.position.clone().addScaledVector(forward,7.5);
       target.y+=1.4;
     }
-    const follow=1-Math.exp(-4.4*dt);
+    // The chase camera must catch up faster at high speed. A fixed 4.4
+    // follow rate lets the car run far ahead of the camera during turns.
+    const speedFactor=clamp(Math.abs(world.speed)/78,0,1);
+    const followRate=5.5+speedFactor*7.5;
+    const follow=1-Math.exp(-followRate*dt);
     camera.position.lerp(desired,follow);
     camera.lookAt(target);
-    const speedFactor=clamp(Math.abs(world.speed)/78,0,1);
     camera.fov=damp(camera.fov,61+speedFactor*8+0,2.2,dt);
     camera.updateProjectionMatrix();
   }
