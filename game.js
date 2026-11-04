@@ -462,13 +462,17 @@ async function init() {
     setLoading(14,"BUILDING CITY STREETS…");
     buildWorld();
     setLoading(48,"PREPARING CITY…");
+    // Do not expose the procedural fallback while the detailed 3D car is loading.
+    setLoading(58,"LOADING BUGATTI DIVO 3D MODEL…");
+    const bugattiLoaded=await vehicleSystem.loadCarModel();
+    if(!bugattiLoaded) {
+      throw new Error("Bugatti Divo 3D model could not load. Check your connection and refresh the page.");
+    }
+    setLoading(78,"PREPARING BUGATTI DIVO…");
     updateGarage();
     replacePlayerVehicle();
     player.position.set(0,0,0);
     controlSystem.bindControls();
-    vehicleSystem.loadCarModel().then(()=>{
-      if(vehicleSystem.hasDetailedAsset(currentCarIndex))refreshLoadedPlayerVehicle();
-    });
     window.addEventListener("resize",onResize);
     const qualitySelect=$("quality-select");
     qualitySelect.value=selectedQuality;
@@ -488,7 +492,8 @@ async function init() {
     tick();
   } catch(err) {
     console.error(err);
-    showError("The 3D world could not start. Refresh the page or try a newer browser.");
+    showError(err?.message || "The 3D world could not start. Refresh the page or try a newer browser.");
+    $("start-button").disabled=true;
     $("loadtext").textContent="INITIALISATION ERROR";
   }
 }
