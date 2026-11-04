@@ -58,7 +58,7 @@ try {
     }
     await page.locator("#next-car").click();
   }
-  assert.equal(await page.locator("#car-name").innerText(), "BUGATTI CHIRON", "garage should cycle back to the first car");
+  assert.equal(await page.locator("#car-name").innerText(), "SPECTRAL GT RS", "garage should cycle back to the detailed default car");
   await page.locator("#next-car").click();
   const secondCar = await page.locator("#car-name").innerText();
   assert.notEqual(firstCar, secondCar, "next-car button should change the selected car");
