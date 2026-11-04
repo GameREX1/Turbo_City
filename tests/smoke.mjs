@@ -40,25 +40,26 @@ try {
 
   // Check the garage selector before driving.
   const firstCar = await page.locator("#car-name").innerText();
-  assert.equal(firstCar, "SPECTRAL GT RS", "garage should start with the imported detailed CC0 sports car");
-  assert.equal(await page.locator("#car-count").innerText(), "08 / 08", "garage should show the detailed default vehicle as item eight of eight");
+  assert.equal(firstCar, "BUGATTI DIVO", "garage should start with the uploaded Bugatti Divo");
+  assert.equal(await page.locator("#car-count").innerText(), "01 / 08", "garage should show the Bugatti Divo as item one of eight");
   const expectedGarageCars = [
-    "SPECTRAL GT RS", "BUGATTI CHIRON", "TOYOTA LAND CRUISER", "LAMBORGHINI AVENTADOR SVJ 63",
-    "TOYOTA SUPRA MK4", "NISSAN GT-R R35", "FORD MUSTANG GT", "CHEVROLET CAMARO SS"
+    "BUGATTI DIVO", "TOYOTA LAND CRUISER", "LAMBORGHINI AVENTADOR SVJ 63", "TOYOTA SUPRA MK4",
+    "NISSAN GT-R R35", "FORD MUSTANG GT", "CHEVROLET CAMARO SS", "SPECTRAL GT RS"
   ];
   for (const expectedName of expectedGarageCars) {
     assert.equal(await page.locator("#car-name").innerText(), expectedName, "garage should select " + expectedName);
-    if (expectedName === "SPECTRAL GT RS") {
+    if (expectedName === "BUGATTI DIVO") {
       await page.waitForFunction(
-        () => window.__turboCityDebug?.().playerModel === "TurboCity_Spectral_GT_RS",
+        () => window.__turboCityDebug?.().playerModel === "TurboCity_Bugatti_Divo",
         null,
-        { timeout: 15000, polling: 200 }
-      ).catch(() => {});
-      console.log("DETAILED VEHICLE ASSET TRACE:", await state());
+        { timeout: 45000, polling: 200 }
+      );
+      assert.equal((await state()).playerModel, "TurboCity_Bugatti_Divo", "uploaded Bugatti Divo GLB should replace the fallback vehicle");
+      console.log("BUGATTI DIVO ASSET TRACE:", await state());
     }
     await page.locator("#next-car").click();
   }
-  assert.equal(await page.locator("#car-name").innerText(), "SPECTRAL GT RS", "garage should cycle back to the detailed default car");
+  assert.equal(await page.locator("#car-name").innerText(), "BUGATTI DIVO", "garage should cycle back to the Bugatti Divo");
   await page.locator("#next-car").click();
   const secondCar = await page.locator("#car-name").innerText();
   assert.notEqual(firstCar, secondCar, "next-car button should change the selected car");
