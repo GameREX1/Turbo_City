@@ -3,7 +3,7 @@ export const WORLD_LIMIT = 555;
 
 export const CARS = [
   {
-    name:"BUGATTI CHIRON", type:"QUAD-TURBO HYPER GT", kind:"chiron",
+    name:"BUGATTI DIVO", type:"W16 QUAD-TURBO HYPERCAR", kind:"chiron",
     color:0x8fdcff, top:420, accel:99, handling:94, power:37, grip:9.4, steer:1.84,
     length:4.72, width:2.04, wheelbase:2.72, wheelRadius:.405, bodyTop:1.02, cabinBase:.91, cabinTop:1.43, roofWidth:.72
   },
