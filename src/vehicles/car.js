@@ -5,7 +5,8 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   let vehicleWheels=[];
   let brakeLights=[];
   let playerLight=null;
-  let detailedCarAsset=null;
+  let bugattiDivoAsset=null;
+  let spectralCarAsset=null;
   let detailedCarLoadAttempted=false;
 
   const profiles = {
@@ -136,19 +137,30 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     vehicleWheels.push({wheel:tire,pivot,front});
   }
 
-  function buildDetailedCar(index) {
+  function buildDetailedCar(index, asset, rootName, orientation="auto") {
     const spec=cars[index];
     const root=new THREE.Group();
-    root.name="TurboCity_Spectral_GT_RS";
-    const model=detailedCarAsset.clone(true);
+    root.name=rootName;
+    const model=asset.clone(true);
 
-    // This CC0 asset is authored nose-forward on +X. Turn it to Turbo City's -Z.
-    model.rotation.y=Math.PI/2;
+    // Keep the model's own paint, glass and texture materials. Determine whether
+    // its long axis is X or Z, then turn its nose toward the game's -Z direction.
+    const sourceBounds=new THREE.Box3().setFromObject(model);
+    const sourceSize=sourceBounds.getSize(new THREE.Vector3());
+    if(orientation==="x-forward") {
+      model.rotation.y=Math.PI/2;
+    } else if(orientation==="z-forward") {
+      model.rotation.y=Math.PI;
+    } else {
+      model.rotation.y=sourceSize.x>=sourceSize.z?Math.PI/2:Math.PI;
+    }
+
     const bounds=new THREE.Box3().setFromObject(model);
     const size=bounds.getSize(new THREE.Vector3());
     const scale=Math.min(
       spec.length/Math.max(size.z,.001),
-      spec.width/Math.max(size.x,.001)
+      spec.width/Math.max(size.x,.001),
+      1.65/Math.max(size.y,.001)
     );
     model.scale.setScalar(scale);
     model.position.set(
@@ -161,7 +173,7 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
       if(!object.isMesh)return;
       object.castShadow=true;
       object.receiveShadow=true;
-      if(object.name.toLowerCase().includes("tire")) {
+      if(/tire|tyre|wheel/i.test(object.name)) {
         vehicleWheels.push({wheel:object,pivot:null,front:false,axis:"y"});
       }
     });
@@ -451,26 +463,46 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   }
 
   async function loadCarModel() {
-    if(detailedCarLoadAttempted)return Boolean(detailedCarAsset);
+    if(detailedCarLoadAttempted)return Boolean(bugattiDivoAsset||spectralCarAsset);
     detailedCarLoadAttempted=true;
-    try {
-      const loader=new GLTFLoader();
-      const gltf=await loader.loadAsync(
-        "https://raw.githubusercontent.com/JaronKBragg7337/spectral-gt-rs/main/spectral_gt_rs_game_ready.glb"
-      );
-      detailedCarAsset=gltf.scene;
-      return true;
-    } catch(error) {
-      console.warn("Detailed CC0 vehicle could not load; using the built-in model.",error);
-      return false;
-    }
+    const loader=new GLTFLoader();
+
+    const loadAsset=async(url,label)=>{
+      try {
+        const gltf=await loader.loadAsync(url);
+        return gltf.scene;
+      } catch(error) {
+        console.warn(label+" could not load; the built-in vehicle will be used.",error);
+        return null;
+      }
+    };
+
+    // The uploaded Bugatti Divo is served from this repository. Keep the
+    // original optional showcase car available as the final garage selection.
+    const [divo,spectral]=await Promise.all([
+      loadAsset("./bugati_divo.glb","Uploaded Bugatti Divo"),
+      loadAsset("https://raw.githubusercontent.com/JaronKBragg7337/spectral-gt-rs/main/spectral_gt_rs_game_ready.glb","Spectral GT RS")
+    ]);
+    bugattiDivoAsset=divo;
+    spectralCarAsset=spectral;
+    return Boolean(bugattiDivoAsset||spectralCarAsset);
   }
 
   function makePlayerVehicle(index) {
     vehicleWheels=[];
     brakeLights=[];
-    if(index===cars.length-1&&detailedCarAsset)return buildDetailedCar(index);
+    if(index===0&&bugattiDivoAsset) {
+      return buildDetailedCar(index,bugattiDivoAsset,"TurboCity_Bugatti_Divo","auto");
+    }
+    if(index===cars.length-1&&spectralCarAsset) {
+      return buildDetailedCar(index,spectralCarAsset,"TurboCity_Spectral_GT_RS","x-forward");
+    }
     return buildCar(index);
+  }
+
+  function hasDetailedAsset(index) {
+    return (index===0&&Boolean(bugattiDivoAsset))||
+      (index===cars.length-1&&Boolean(spectralCarAsset));
   }
 
   return {
@@ -479,6 +511,6 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     getWheels:()=>vehicleWheels,
     getBrakeLights:()=>brakeLights,
     getPlayerLight:()=>playerLight,
-    isUsingFallback:()=>!detailedCarAsset
+    hasDetailedAsset
   };
 }
