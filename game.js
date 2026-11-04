@@ -77,7 +77,7 @@ if(isSmokeMode) {
 
 let renderer, composer, scene, camera, clock, player, pmrem, sunLight;
 let previewTime=0, loadingDone=false, selectedQuality="balanced";
-let currentCarIndex=0;
+let currentCarIndex=cars.length-1; // Start with the imported detailed CC0 sports car.
 let roadSystem, buildingSystem, activitySystem, trafficSystem, vehicleSystem;
 let controlSystem, drivingSystem, cameraSystem;
 let minimapAccumulator=0, audioAccumulator=0;
