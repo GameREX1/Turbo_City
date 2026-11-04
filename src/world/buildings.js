@@ -265,18 +265,25 @@ export function createBuildingModule({ scene, world, ROAD_SPACING, material, box
     };
     let seed=71;
     const parkBlocks=new Set(["-2,1","-3,-1","1,1"]);
+    const blockSlots=[[-27,-27],[27,-27],[-27,27],[27,27]];
     for(let gx=-3;gx<=2;gx++) for(let gz=-3;gz<=2;gz++) {
       if((gx===2 && gz===-3) || parkBlocks.has(gx+","+gz)) continue;
       const cx=gx*ROAD_SPACING+ROAD_SPACING/2;
       const cz=gz*ROAD_SPACING+ROAD_SPACING/2;
-      const n=1+(seed%3);
-      for(let k=0;k<n;k++) {
+      // Two or three deliberately separated buildings per block prevent
+      // overlapping footprints and give the city a more planned street grid.
+      const count=2+(Math.abs(gx*5+gz*3+seed)%2);
+      const offset=(Math.abs(gx-gz)+gx+8)%4;
+      for(let k=0;k<count;k++) {
         seed=(seed*9301+49297)%233280;
-        const x=cx+(((seed*17)%47)-23);
-        const z=cz+(((seed*31)%47)-23);
-        const w=26+((seed*7)%24);
-        const d=26+((seed*11)%25);
-        const h=38+((seed*19)%105);
+        const slot=blockSlots[(k+offset)%blockSlots.length];
+        const x=cx+slot[0]+(((seed*17)%7)-3);
+        const z=cz+slot[1]+(((seed*31)%7)-3);
+        const w=21+((seed*7)%12);
+        const d=21+((seed*11)%12);
+        let h=20+((seed*19)%72);
+        // A few taller landmarks create a varied skyline among lower city blocks.
+        if(Math.abs(gx*7+gz*11+k*3)%9===0)h=82+((seed*13)%55);
         addCityBuilding(x,z,w,d,h,seed,windowMatrices,batches);
       }
     }
