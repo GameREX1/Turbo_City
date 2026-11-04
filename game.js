@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 import { Sky } from "three/addons/objects/Sky.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
@@ -161,6 +162,29 @@ function makeNoiseTexture(base, fleck, seed=1) {
   tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   return tex;
 }
+function loadOutdoorCarEnvironment() {
+  if(isTestMode || !renderer || !scene)return;
+  const loader=new RGBELoader();
+  loader.load(
+    "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/urban_street_01_1k.hdr",
+    hdrTexture=>{
+      if(!renderer || !scene) { hdrTexture.dispose(); return; }
+      const generator=new THREE.PMREMGenerator(renderer);
+      generator.compileEquirectangularShader();
+      const nextEnvironment=generator.fromEquirectangular(hdrTexture);
+      const previousEnvironment=pmrem;
+      pmrem=nextEnvironment;
+      scene.environment=nextEnvironment.texture;
+      scene.environmentIntensity=1.18;
+      hdrTexture.dispose();
+      generator.dispose();
+      if(previousEnvironment && previousEnvironment!==nextEnvironment)previousEnvironment.dispose();
+    },
+    undefined,
+    error=>console.warn("Outdoor car-reflection HDRI unavailable; using the built-in fallback environment.",error)
+  );
+}
+
 function makeSky() {
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0xc0c8cb, 520, 1540);
@@ -423,6 +447,7 @@ async function init() {
     scene.environment=pmrem;
     scene.environmentIntensity=1.05;
     pmremGenerator.dispose();
+    loadOutdoorCarEnvironment();
 
     setLoading(14,"BUILDING CITY STREETS…");
     buildWorld();
