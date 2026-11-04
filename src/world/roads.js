@@ -13,148 +13,218 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
       inst.setMatrixAt(i,obj.matrix);
     });
     inst.instanceMatrix.needsUpdate=true;
-    inst.castShadow=false;inst.receiveShadow=true;
+    inst.castShadow=false;
+    inst.receiveShadow=true;
     scene.add(inst);
   }
-  
+
   function makeAsphaltTexture() {
     const canvas=document.createElement("canvas");
     canvas.width=canvas.height=512;
     const ctx=canvas.getContext("2d");
-    ctx.fillStyle="#34383b";
+    ctx.fillStyle="#3b4145";
     ctx.fillRect(0,0,512,512);
     let seed=41027;
     const random=()=>{
       seed=(1664525*seed+1013904223)>>>0;
       return seed/4294967296;
     };
-    // Fine mineral grain and tiny aggregate specks.
-    for(let i=0;i<36000;i++){
-      const shade=random()>.52?"#777b7d":"#15191c";
-      ctx.globalAlpha=.035+random()*.11;
-      ctx.fillStyle=shade;
-      const size=.35+random()*1.5;
+    // Fine, even aggregate grain keeps the asphalt realistic without looking damaged.
+    for(let i=0;i<26000;i++){
+      const light=random()>.52;
+      ctx.globalAlpha=.025+random()*.055;
+      ctx.fillStyle=light?"#858b8d":"#151a1d";
+      const size=.3+random()*1.1;
       ctx.fillRect(random()*512,random()*512,size,size);
     }
-    // Faded repair patches and oil-darkened areas.
-    for(let i=0;i<22;i++){
-      const x=random()*512,y=random()*512,w=18+random()*90,h=8+random()*42;
-      ctx.globalAlpha=.05+random()*.07;
-      ctx.fillStyle=random()>.5?"#171b1d":"#76797a";
+    // Very subtle resurfacing variation; no visible cracks or heavy tyre stains.
+    for(let i=0;i<8;i++){
+      const x=random()*512,y=random()*512,w=28+random()*70,h=12+random()*24;
+      ctx.globalAlpha=.025+random()*.025;
+      ctx.fillStyle=random()>.5?"#252b2f":"#687176";
       ctx.beginPath();
       ctx.ellipse(x,y,w,h,random()*Math.PI,0,Math.PI*2);
       ctx.fill();
-    }
-    // Hairline cracks with irregular branches.
-    ctx.lineCap="round";
-    for(let i=0;i<18;i++){
-      let x=random()*512,y=random()*512;
-      ctx.globalAlpha=.18+random()*.16;
-      ctx.strokeStyle="#171a1c";
-      ctx.lineWidth=.5+random()*.8;
-      ctx.beginPath();
-      ctx.moveTo(x,y);
-      for(let k=0;k<5;k++){
-        x+=(random()-.5)*28;
-        y+=(random()-.5)*32;
-        ctx.lineTo(x,y);
-      }
-      ctx.stroke();
-    }
-    // Faint tyre scuffs.
-    for(let i=0;i<9;i++){
-      const y=random()*512;
-      ctx.globalAlpha=.045;
-      ctx.strokeStyle="#101416";
-      ctx.lineWidth=2+random()*3;
-      ctx.beginPath();
-      ctx.moveTo(random()*180,y);
-      ctx.bezierCurveTo(180,y-8,330,y+8,512,y+(random()-.5)*18);
-      ctx.stroke();
     }
     ctx.globalAlpha=1;
     const texture=new THREE.CanvasTexture(canvas);
     texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
     texture.colorSpace=THREE.SRGBColorSpace;
-    texture.anisotropy=Math.min(4,8);
+    texture.anisotropy=Math.min(8,8);
     return texture;
   }
 
   function buildGroundAndRoads() {
-    const grass = makeNoiseTexture("#667653","#9aa17f",112);
-    const asphalt = makeAsphaltTexture();
+    const grass=makeNoiseTexture("#667653","#9aa17f",112);
+    const asphalt=makeAsphaltTexture();
     grass.repeat.set(90,90);
-    const grassMat = new THREE.MeshStandardMaterial({map:grass,roughness:1,metalness:0});
-    const roadMatV = new THREE.MeshStandardMaterial({map:asphalt,bumpMap:asphalt,bumpScale:.018,roughness:.86,metalness:.045});
-    const roadMatH = new THREE.MeshStandardMaterial({map:asphalt.clone(),bumpMap:asphalt.clone(),bumpScale:.018,roughness:.86,metalness:.045});
+    const grassMat=new THREE.MeshStandardMaterial({map:grass,roughness:1,metalness:0});
+    const roadMatV=new THREE.MeshStandardMaterial({
+      map:asphalt,bumpMap:asphalt,bumpScale:.009,roughness:.92,metalness:.015
+    });
+    const roadHorizontal=asphalt.clone();
+    const roadBumpHorizontal=asphalt.clone();
     roadMatV.map.repeat.set(2,48);
+    const roadMatH=new THREE.MeshStandardMaterial({
+      map:roadHorizontal,bumpMap:roadBumpHorizontal,bumpScale:.009,roughness:.92,metalness:.015
+    });
     roadMatH.map.repeat.set(48,2);
-    roadMatH.map.needsUpdate = true;
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),grassMat);
-    ground.rotation.x=-Math.PI/2; ground.position.y=-.14; ground.receiveShadow=true; scene.add(ground);
-  
-    const concreteMap=makeNoiseTexture("#a4a39a","#d1cec3",85);
-    concreteMap.repeat.set(28,28);
-    const concrete = new THREE.MeshStandardMaterial({map:concreteMap,roughness:.96,metalness:.01});
-    const yellow = material(0xe5c64f,.86,.02);
-    const white = material(0xe8e6de,.85,.015);
-    const roads = [];
-    const dashV=[],dashH=[],zebraV=[],zebraH=[],stopH=[],stopV=[];
-    for(let i=-3;i<=3;i++) roads.push(i*ROAD_SPACING);
-    for(const p of roads) {
-      const v = new THREE.Mesh(new THREE.PlaneGeometry(32,1320),roadMatV);
-      v.rotation.x=-Math.PI/2; v.position.set(p,0,0); v.receiveShadow=true; scene.add(v);
-      const h = new THREE.Mesh(new THREE.PlaneGeometry(1320,32),roadMatH);
-      h.rotation.x=-Math.PI/2; h.position.set(0,.001,p); h.receiveShadow=true; scene.add(h);
-      for(const side of [-1,1]) {
-        const vSide = new THREE.Mesh(new THREE.PlaneGeometry(4,1320),concrete);
-        vSide.rotation.x=-Math.PI/2; vSide.position.set(p+side*19,.008,0); scene.add(vSide);
-        const hSide = new THREE.Mesh(new THREE.PlaneGeometry(1320,4),concrete);
-        hSide.rotation.x=-Math.PI/2; hSide.position.set(0,.009,p+side*19); scene.add(hSide);
-        box(scene,.14,.025,1320,white,p+side*14.1,.035,0,false);
-        box(scene,1320,.025,.14,white,0,.035,p+side*14.1,false);
-      }
-      for(let n=-10;n<=10;n++) {
-        const z=n*58;
-        if(Math.abs(z-p)<23) continue;
-        dashV.push({x:p,y:.033,z});
-        dashH.push({x:z,y:.033,z:p});
-      }
-    }
-    // All road paint is batched into instanced meshes to keep draw calls low.
-    addInstancedBoxes(new THREE.BoxGeometry(.16,.026,7),yellow,dashV);
-    addInstancedBoxes(new THREE.BoxGeometry(7,.026,.16),yellow,dashH);
-  
-    // Zebra crossings and stop bars at the larger intersections.
-    for(const x of roads) for(const z of roads) {
-      for(let k=-5;k<=5;k++) {
-        zebraV.push({x:x+k*1.38,y:.035,z:z-23});
-        zebraV.push({x:x+k*1.38,y:.035,z:z+23});
-        zebraH.push({x:x-23,y:.035,z:z+k*1.38});
-        zebraH.push({x:x+23,y:.035,z:z+k*1.38});
-      }
-      stopH.push({x,y:.04,z:z-31},{x,y:.04,z:z+31});
-      stopV.push({x:x-31,y:.04,z},{x:x+31,y:.04,z});
-    }
-    addInstancedBoxes(new THREE.BoxGeometry(.72,.026,7.5),white,zebraV);
-    addInstancedBoxes(new THREE.BoxGeometry(7.5,.026,.72),white,zebraH);
-    addInstancedBoxes(new THREE.BoxGeometry(31,.035,.22),yellow,stopH);
-    addInstancedBoxes(new THREE.BoxGeometry(.22,.035,31),yellow,stopV);
+    roadMatH.bumpMap.repeat.set(48,2);
 
-    const manholes=[];
-    const drains=[];
-    for(let ix=0;ix<roads.length;ix++){
-      for(let iz=0;iz<roads.length;iz++){
-        if((ix+iz)%2===0)manholes.push({x:roads[ix]+10,y:.018,z:roads[iz]+10});
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(1500,1500),grassMat);
+    ground.rotation.x=-Math.PI/2;
+    ground.position.y=-.14;
+    ground.receiveShadow=true;
+    scene.add(ground);
+
+    const concreteMap=makeNoiseTexture("#b7b8b2","#e0ded5",85);
+    concreteMap.repeat.set(28,28);
+    const concrete=new THREE.MeshStandardMaterial({map:concreteMap,roughness:.96,metalness:.01});
+    const yellow=material(0xf1c84f,.82,.015);
+    const white=material(0xf4f3ec,.82,.01);
+    const curbMat=material(0xc7c8c2,.9,.015);
+    const seamMat=material(0x999c98,.95,.005);
+    const drainMat=material(0x343a3e,.9,.12);
+    const coverMat=material(0x596064,.82,.28);
+
+    const roads=[];
+    for(let i=-3;i<=3;i++)roads.push(i*ROAD_SPACING);
+
+    const curbItems=[];
+    const edgeItemsV=[],edgeItemsH=[];
+    const centerItemsV=[],centerItemsH=[];
+    const dashItemsV=[],dashItemsH=[];
+    const sidewalkSeamsV=[],sidewalkSeamsH=[];
+    const zebraV=[],zebraH=[];
+    const stopV=[],stopH=[];
+    const manholes=[],drains=[];
+
+    // Segment long pavement details around each junction so crossings stay open.
+    function addRoadsideSegments(target,axis,fixed,halfWidth,y,height=0.14) {
+      let cursor=-660;
+      const halfGap=22;
+      for(const cross of roads) {
+        const before=cross-halfGap;
+        if(before>cursor) {
+          const length=before-cursor;
+          target.push(axis==="z"
+            ?{x:fixed,y,z:(cursor+before)/2,sx:halfWidth,sy:height,sz:length}
+            :{x:(cursor+before)/2,y,z:fixed,sx:length,sy:height,sz:halfWidth});
+        }
+        cursor=cross+halfGap;
+      }
+      if(cursor<660) {
+        const length=660-cursor;
+        target.push(axis==="z"
+          ?{x:fixed,y,z:(cursor+660)/2,sx:halfWidth,sy:height,sz:length}
+          :{x:(cursor+660)/2,y,z:fixed,sx:length,sy:height,sz:halfWidth});
       }
     }
-    for(const p of roads)for(let z=-440;z<=440;z+=110){
-      drains.push({x:p+20.4,y:.026,z,sx:1.2,sy:.025,sz:.32});
-      drains.push({x:p-20.4,y:.026,z,sx:1.2,sy:.025,sz:.32});
+
+    function nearJunction(value) {
+      return roads.some(cross=>Math.abs(value-cross)<24);
     }
-    const coverGeometry=new THREE.CylinderGeometry(.58,.58,.055,16);
-    const coverMaterial=material(0x51575a,.82,.35);
-    const covers=new THREE.InstancedMesh(coverGeometry,coverMaterial,manholes.length);
+
+    for(const p of roads) {
+      // Smooth 32 m carriageways with a slightly offset crossing surface to avoid z-fighting.
+      const vertical=new THREE.Mesh(new THREE.PlaneGeometry(32,1320),roadMatV);
+      vertical.rotation.x=-Math.PI/2;
+      vertical.position.set(p,0,0);
+      vertical.receiveShadow=true;
+      scene.add(vertical);
+
+      const horizontal=new THREE.Mesh(new THREE.PlaneGeometry(1320,32),roadMatH);
+      horizontal.rotation.x=-Math.PI/2;
+      horizontal.position.set(0,.002,p);
+      horizontal.receiveShadow=true;
+      scene.add(horizontal);
+
+      for(const side of [-1,1]) {
+        const sidewalkV=new THREE.Mesh(new THREE.PlaneGeometry(4,1320),concrete);
+        sidewalkV.rotation.x=-Math.PI/2;
+        sidewalkV.position.set(p+side*19,.009,0);
+        sidewalkV.receiveShadow=true;
+        scene.add(sidewalkV);
+
+        const sidewalkH=new THREE.Mesh(new THREE.PlaneGeometry(1320,4),concrete);
+        sidewalkH.rotation.x=-Math.PI/2;
+        sidewalkH.position.set(0,.01,p+side*19);
+        sidewalkH.receiveShadow=true;
+        scene.add(sidewalkH);
+
+        // Raised, clean curb edges with breaks at junction mouths.
+        addRoadsideSegments(curbItems,"z",p+side*16.15, .28,.075,.13);
+        addRoadsideSegments(curbItems,"x",p+side*16.15, .28,.075,.13);
+        addRoadsideSegments(edgeItemsV,"z",p+side*14.35,.16,.047,.025);
+        addRoadsideSegments(edgeItemsH,"x",p+side*14.35,.16,.047,.025);
+
+        // Subtle paving joints keep the sidewalks from reading as one flat slab.
+        for(let mark=-648;mark<=648;mark+=12) {
+          if(nearJunction(mark))continue;
+          sidewalkSeamsV.push({x:p+side*19,y:.025,z:mark,sx:3.65,sy:.012,sz:.035});
+          sidewalkSeamsH.push({x:mark,y:.026,z:p+side*19,sx:.035,sy:.012,sz:3.65});
+        }
+      }
+
+      // Two marked lanes in each direction, with a double-yellow centre divider.
+      addRoadsideSegments(centerItemsV,"z",p-.24,.13,.052,.025);
+      addRoadsideSegments(centerItemsV,"z",p+.24,.13,.052,.025);
+      addRoadsideSegments(centerItemsH,"x",p-.24,.13,.052,.025);
+      addRoadsideSegments(centerItemsH,"x",p+.24,.13,.052,.025);
+
+      for(const laneOffset of [-7,7]) {
+        for(let mark=-650;mark<=650;mark+=14) {
+          if(nearJunction(mark))continue;
+          dashItemsV.push({x:p+laneOffset,y:.052,z:mark,sx:.14,sy:.025,sz:5.5});
+          dashItemsH.push({x:mark,y:.053,z:p+laneOffset,sx:5.5,sy:.025,sz:.14});
+        }
+      }
+
+      // Clean crosswalk and stop-bar markings at every major intersection.
+      for(const junction of roads) {
+        for(const approach of [-1,1]) {
+          const crossZ=junction+approach*23;
+          const crossX=junction+approach*23;
+          for(let k=-11;k<=11;k++) {
+            zebraV.push({x:p+k*1.28,y:.055,z:crossZ,sx:.72,sy:.025,sz:7.2});
+            zebraH.push({x:crossX,y:.056,z:p+k*1.28,sx:7.2,sy:.025,sz:.72});
+          }
+          stopV.push({x:p,y:.056,z:junction+approach*32,sx:29,sy:.026,sz:.20});
+          stopH.push({x:junction+approach*32,y:.057,z:p,sx:.20,sy:.026,sz:29});
+        }
+      }
+    }
+
+    // Raised curbs, lane paint, double-yellow dividers and sidewalks are batched.
+    const unitBox=new THREE.BoxGeometry(1,1,1);
+    addInstancedBoxes(unitBox,curbMat,curbItems);
+    addInstancedBoxes(unitBox,white,edgeItemsV);
+    addInstancedBoxes(unitBox,white,edgeItemsH);
+    addInstancedBoxes(unitBox,yellow,centerItemsV);
+    addInstancedBoxes(unitBox,yellow,centerItemsH);
+    addInstancedBoxes(unitBox,white,dashItemsV);
+    addInstancedBoxes(unitBox,white,dashItemsH);
+    addInstancedBoxes(unitBox,seamMat,sidewalkSeamsV);
+    addInstancedBoxes(unitBox,seamMat,sidewalkSeamsH);
+    addInstancedBoxes(unitBox,white,zebraV);
+    addInstancedBoxes(unitBox,white,zebraH);
+    addInstancedBoxes(unitBox,white,stopV);
+    addInstancedBoxes(unitBox,white,stopH);
+
+    // Manhole covers and storm drains provide small but convincing street details.
+    for(let ix=0;ix<roads.length;ix++) {
+      for(let iz=0;iz<roads.length;iz++) {
+        if((ix+iz)%2===0)manholes.push({x:roads[ix]+10,y:.024,z:roads[iz]+10});
+      }
+    }
+    for(const p of roads)for(let z=-440;z<=440;z+=110) {
+      if(nearJunction(z))continue;
+      drains.push({x:p+20.4,y:.028,z,sx:1.15,sy:.035,sz:.28});
+      drains.push({x:p-20.4,y:.028,z,sx:1.15,sy:.035,sz:.28});
+    }
+
+    const coverGeometry=new THREE.CylinderGeometry(.58,.58,.055,24);
+    const covers=new THREE.InstancedMesh(coverGeometry,coverMat,manholes.length);
     const coverDummy=new THREE.Object3D();
     manholes.forEach((it,i)=>{
       coverDummy.position.set(it.x,it.y,it.z);
@@ -162,11 +232,11 @@ export function createRoadModule({ scene, ROAD_SPACING, material, makeNoiseTextu
       covers.setMatrixAt(i,coverDummy.matrix);
     });
     covers.instanceMatrix.needsUpdate=true;
-    covers.castShadow=false;covers.receiveShadow=false;scene.add(covers);
-    const drainMaterial=material(0x303638,.92,.12);
-    addInstancedBoxes(new THREE.BoxGeometry(1,1,1),drainMaterial,drains);
+    covers.castShadow=false;
+    covers.receiveShadow=false;
+    scene.add(covers);
+    addInstancedBoxes(unitBox,drainMat,drains);
   }
-  
-  
+
   return { buildGroundAndRoads, addInstancedBoxes };
 }
