@@ -78,7 +78,7 @@ if(isSmokeMode) {
 
 let renderer, composer, scene, camera, clock, player, pmrem, sunLight;
 let previewTime=0, loadingDone=false, selectedQuality="balanced";
-let currentCarIndex=cars.length-1; // Start with the imported detailed CC0 sports car.
+let currentCarIndex=0; // Start with the uploaded Bugatti Divo.
 let roadSystem, buildingSystem, activitySystem, trafficSystem, vehicleSystem;
 let controlSystem, drivingSystem, cameraSystem;
 let minimapAccumulator=0, audioAccumulator=0;
@@ -271,6 +271,16 @@ function replacePlayerVehicle() {
   player.position.set(0,0,0);
   if(world.started)placeAtModeStart();
 }
+
+function refreshLoadedPlayerVehicle() {
+  if(!player)return;
+  const position=player.position.clone();
+  const rotation=player.rotation.clone();
+  scene.remove(player);
+  player=vehicleSystem.makePlayerVehicle(currentCarIndex);
+  player.position.copy(position);
+  player.rotation.copy(rotation);
+}
 $("prev-car").addEventListener("click",()=>{
   currentCarIndex=(currentCarIndex+cars.length-1)%cars.length;updateGarage();replacePlayerVehicle();
 });
@@ -457,7 +467,7 @@ async function init() {
     player.position.set(0,0,0);
     controlSystem.bindControls();
     vehicleSystem.loadCarModel().then(()=>{
-      if(!world.started&&!vehicleSystem.isUsingFallback())replacePlayerVehicle();
+      if(vehicleSystem.hasDetailedAsset(currentCarIndex))refreshLoadedPlayerVehicle();
     });
     window.addEventListener("resize",onResize);
     const qualitySelect=$("quality-select");
