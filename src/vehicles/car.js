@@ -463,29 +463,17 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
   }
 
   async function loadCarModel() {
-    if(detailedCarLoadAttempted)return Boolean(bugattiDivoAsset||spectralCarAsset);
+    if(detailedCarLoadAttempted)return Boolean(bugattiDivoAsset);
     detailedCarLoadAttempted=true;
-    const loader=new GLTFLoader();
-
-    const loadAsset=async(url,label)=>{
-      try {
-        const gltf=await loader.loadAsync(url);
-        return gltf.scene;
-      } catch(error) {
-        console.warn(label+" could not load; the built-in vehicle will be used.",error);
-        return null;
-      }
-    };
-
-    // The uploaded Bugatti Divo is served from this repository. Keep the
-    // original optional showcase car available as the final garage selection.
-    const [divo,spectral]=await Promise.all([
-      loadAsset("./bugati_divo.glb","Uploaded Bugatti Divo"),
-      loadAsset("https://raw.githubusercontent.com/JaronKBragg7337/spectral-gt-rs/main/spectral_gt_rs_game_ready.glb","Spectral GT RS")
-    ]);
-    bugattiDivoAsset=divo;
-    spectralCarAsset=spectral;
-    return Boolean(bugattiDivoAsset||spectralCarAsset);
+    try {
+      const loader=new GLTFLoader();
+      const gltf=await loader.loadAsync("./bugati_divo.glb");
+      bugattiDivoAsset=gltf.scene;
+      return true;
+    } catch(error) {
+      console.warn("Uploaded Bugatti Divo could not load; the built-in vehicle will be used.",error);
+      return false;
+    }
   }
 
   function makePlayerVehicle(index) {
