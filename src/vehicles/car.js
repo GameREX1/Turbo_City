@@ -467,8 +467,16 @@ export function createVehicleModule({ scene, material, box, cylinder, cars }) {
     detailedCarLoadAttempted=true;
     try {
       const loader=new GLTFLoader();
-      const gltf=await loader.loadAsync("./bugati_divo.glb");
+      // Resolve from this module, not the current browser route, so the model
+      // still loads correctly when the game is opened through a nested URL.
+      const modelUrl=new URL("../../bugati_divo.glb",import.meta.url).href;
+      const gltf=await loader.loadAsync(modelUrl);
+      if(!gltf.scene)throw new Error("The Bugatti Divo GLB has no scene.");
+      let meshCount=0;
+      gltf.scene.traverse(object=>{if(object.isMesh&&object.geometry)meshCount++;});
+      if(meshCount===0)throw new Error("The Bugatti Divo GLB contains no renderable meshes.");
       bugattiDivoAsset=gltf.scene;
+      console.info("Turbo City: detailed Bugatti Divo loaded", {modelUrl,meshCount});
       return true;
     } catch(error) {
       console.warn("Uploaded Bugatti Divo could not load; the built-in vehicle will be used.",error);
