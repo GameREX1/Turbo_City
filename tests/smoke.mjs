@@ -40,11 +40,11 @@ try {
 
   // Check the garage selector before driving.
   const firstCar = await page.locator("#car-name").innerText();
-  assert.equal(firstCar, "BUGATTI CHIRON", "garage should start with the light-blue Bugatti Chiron");
-  assert.equal(await page.locator("#car-count").innerText(), "01 / 08", "garage should show eight selectable vehicles");
+  assert.equal(firstCar, "SPECTRAL GT RS", "garage should start with the imported detailed CC0 sports car");
+  assert.equal(await page.locator("#car-count").innerText(), "08 / 08", "garage should show the detailed default vehicle as item eight of eight");
   const expectedGarageCars = [
-    "BUGATTI CHIRON", "TOYOTA LAND CRUISER", "LAMBORGHINI AVENTADOR SVJ 63",
-    "TOYOTA SUPRA MK4", "NISSAN GT-R R35", "FORD MUSTANG GT", "CHEVROLET CAMARO SS", "SPECTRAL GT RS"
+    "SPECTRAL GT RS", "BUGATTI CHIRON", "TOYOTA LAND CRUISER", "LAMBORGHINI AVENTADOR SVJ 63",
+    "TOYOTA SUPRA MK4", "NISSAN GT-R R35", "FORD MUSTANG GT", "CHEVROLET CAMARO SS"
   ];
   for (const expectedName of expectedGarageCars) {
     assert.equal(await page.locator("#car-name").innerText(), expectedName, "garage should select " + expectedName);
