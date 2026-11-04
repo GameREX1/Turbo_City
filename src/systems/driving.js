@@ -123,7 +123,12 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     if(playerLight)playerLight.intensity=1.25;
   
     vehicleWheels.forEach(w=>{
-      if(w.wheel)w.wheel.rotation.x-=speedAlong*dt/Math.max(.24,w.wheel.geometry.parameters.radiusTop||.34);
+      if(w.wheel) {
+        const radius=w.wheel.geometry?.parameters?.radiusTop||.34;
+        const spin=speedAlong*dt/Math.max(.24,radius);
+        if(w.axis==="y")w.wheel.rotation.y-=spin;
+        else w.wheel.rotation.x-=spin;
+      }
       if(w.front&&w.pivot)w.pivot.rotation.y=-steering*.30;
     });
   
