@@ -25,7 +25,6 @@ const isVisualTestMode = queryFlags.has("ciVisual");
 const isTestMode = isSmokeMode || isVisualTestMode;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const TOKYO_CITY_MODEL_URL = "https://tokyo-map-proxy.uk7186979.workers.dev/tokyo-city.glb";
-const TOKYO_GROUND_TEXTURE_URL = "https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/Tokyo_Ground_Albedo_2K.png";
 const damp = (a, b, speed, dt) => THREE.MathUtils.damp(a, b, speed, dt);
 const rand = (min, max) => min + Math.random() * (max - min);
 const input = { gas:false, brake:false, reverse:false, left:false, right:false };
@@ -61,7 +60,7 @@ const world = {
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
-  tokyoSpawn:new THREE.Vector3(0,0,0), tokyoCity:null, tokyoCityBounds:null, tokyoGround:null
+  tokyoSpawn:new THREE.Vector3(0,0,0), tokyoCity:null, tokyoCityBounds:null
 };
 
 if(isSmokeMode) {
@@ -290,11 +289,11 @@ async function loadTokyoCity() {
 
   const originalCenter = originalBounds.getCenter(new THREE.Vector3());
 
-  // The supplied asset is metric. Center it in the driving world and place its
-  // lowest point on the road plane without scaling or changing its materials.
+  // The source asset is already metric and centered near its world origin.
+  // Keep its authored vertical offset: shifting the absolute lowest mesh point
+  // can lift the street surface above the car and leave the vehicle underground.
   cityRoot.position.x -= originalCenter.x;
   cityRoot.position.z -= originalCenter.z;
-  cityRoot.position.y -= originalBounds.min.y;
   cityRoot.updateMatrixWorld(true);
 
   world.buildings.length = 0;
@@ -365,48 +364,6 @@ async function loadTokyoCity() {
   scene.add(cityRoot);
   world.tokyoCity = cityRoot;
   world.tokyoCityBounds = originalSize;
-
-  // The separate 2K albedo is a subtle underlay for any open ground gaps.
-  // Keep it just below the GLB so it never covers roads, buildings, or water.
-  const groundWidth = Math.max(620, originalSize.x + 20);
-  const groundDepth = Math.max(620, originalSize.z + 20);
-  const groundMaterial = new THREE.MeshStandardMaterial({
-    color: 0xffffff, roughness: 0.96, metalness: 0
-  });
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(groundWidth, groundDepth),
-    groundMaterial
-  );
-  ground.name = "Tokyo_Ground_Albedo_Underlay";
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.075, 0);
-  ground.receiveShadow = true;
-  ground.frustumCulled = false;
-  scene.add(ground);
-  world.tokyoGround = ground;
-
-  const groundTextureLoader = new THREE.TextureLoader();
-  groundTextureLoader.setCrossOrigin("anonymous");
-  groundTextureLoader.load(
-    TOKYO_GROUND_TEXTURE_URL,
-    (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(48, 48);
-      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-      ground.material.map = texture;
-      ground.material.needsUpdate = true;
-      console.info("Turbo City: Tokyo ground albedo loaded", {
-        width: texture.image?.width,
-        height: texture.image?.height
-      });
-    },
-    undefined,
-    (error) => {
-      console.warn("Tokyo ground albedo could not load; keeping the clean fallback ground.", error);
-    }
-  );
 
   console.info("Turbo City: Tokyo map loaded", {
     meshCount,
