@@ -75,15 +75,15 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
       if (!isMarkedSurface && size.y < 2.5 && width >= 7 && width <= 28 &&
           length >= 32 && length <= 150) {
         const center = bounds.getCenter(new THREE.Vector3());
-        const localX = center.x - root.position.x;
-        const localZ = center.z - root.position.z;
+        // The lane-marking InstancedMesh is attached to the scene, so keep
+        // these coordinates in world space after the city root is recentered.
         const alongX = size.x >= size.z;
         const halfLength = length * 0.5;
         for (let offset = -halfLength + 7; offset < halfLength - 3; offset += 11) {
           roadDashes.push({
-            x: localX + (alongX ? offset : 0),
-            y: bounds.max.y - root.position.y + 0.035,
-            z: localZ + (alongX ? 0 : offset),
+            x: center.x + (alongX ? offset : 0),
+            y: bounds.max.y + 0.035,
+            z: center.z + (alongX ? 0 : offset),
             sx: alongX ? 2.2 : 0.12,
             sy: 0.025,
             sz: alongX ? 0.12 : 2.2
