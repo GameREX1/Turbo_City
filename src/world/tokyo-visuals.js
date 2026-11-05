@@ -7,6 +7,7 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
   const roadDashes = [];
   const roadSamples = [];
   let roadMeshCount = 0;
+  let inferredRoadMeshCount = 0;
   let buildingMeshCount = 0;
   let shadowMeshCount = 0;
   const maxShadowMeshes = 360;
@@ -40,6 +41,9 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
   }
 
   root.updateMatrixWorld(true);
+  const cityBounds = new THREE.Box3().setFromObject(root);
+  const roadBaseY = cityBounds.min.y;
+
   root.traverse((object) => {
     if (!object.isMesh || !object.geometry) return;
 
@@ -47,13 +51,33 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
       ? object.material
       : object.material ? [object.material] : [];
     const materialNames = materials.map((entry) => entry?.name || "").join(" ");
-    const identity = (object.name || "") + " " + materialNames;
-    const isRoad = ROAD_PATTERN.test(identity);
+    const textureNames = materials.map((entry) => [
+      entry?.map?.name || "",
+      entry?.map?.image?.src || ""
+    ].join(" ")).join(" ");
+    const identity = (object.name || "") + " " + materialNames + " " + textureNames;
+    const namedRoad = ROAD_PATTERN.test(identity);
     const isMarkedSurface = MARKING_PATTERN.test(identity);
     const bounds = new THREE.Box3().setFromObject(object);
     if (bounds.isEmpty()) return;
 
     const size = bounds.getSize(new THREE.Vector3());
+    const width = Math.min(size.x, size.z);
+    const length = Math.max(size.x, size.z);
+    const isLowFlatSegment = size.y <= 1.4 &&
+      bounds.min.y <= roadBaseY + 1.6 &&
+      bounds.max.y <= roadBaseY + 2.5 &&
+      width >= 7 && width <= 30 && length >= 32 && length <= 150;
+    const darkUntexturedSurface = materials.some((entry) => {
+      if (!entry?.color || entry.map) return false;
+      const color = entry.color;
+      const luminance = color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+      return luminance < 0.34;
+    });
+    // Some city GLBs name road surfaces generically. A flat, low, dark asphalt
+    // segment is a safe secondary signal when the node/material has no road name.
+    const inferredRoad = !namedRoad && isLowFlatSegment && darkUntexturedSurface;
+    const isRoad = namedRoad || inferredRoad;
     const isBuilding = size.y > 7 && size.x > 3 && size.z > 3 &&
       size.x < 110 && size.z < 110 && size.y < 450;
 
@@ -63,20 +87,21 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
 
     if (isRoad) {
       roadMeshCount++;
-      if (roadSamples.length < 12) roadSamples.push(identity.slice(0, 100));
+      if (inferredRoad) inferredRoadMeshCount++;
+      if (roadSamples.length < 12) {
+        roadSamples.push({
+          source: inferredRoad ? "geometry/material" : "node/material name",
+          label: identity.slice(0, 100)
+        });
+      }
       object.material = Array.isArray(object.material)
         ? object.material.map((entry) => styleMaterial(entry, "road"))
         : styleMaterial(object.material, "road");
 
       // Add restrained Japanese-style broken white lane separators only to
-      // long, flat, explicitly named road surfaces without existing markings.
-      const width = Math.min(size.x, size.z);
-      const length = Math.max(size.x, size.z);
-      if (!isMarkedSurface && size.y < 2.5 && width >= 7 && width <= 28 &&
-          length >= 32 && length <= 150) {
+      // long, flat road surfaces without existing lane/crosswalk markings.
+      if (!isMarkedSurface && isLowFlatSegment) {
         const center = bounds.getCenter(new THREE.Vector3());
-        // The lane-marking InstancedMesh is attached to the scene, so keep
-        // these coordinates in world space after the city root is recentered.
         const alongX = size.x >= size.z;
         const halfLength = length * 0.5;
         for (let offset = -halfLength + 7; offset < halfLength - 3; offset += 11) {
@@ -123,5 +148,12 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
     scene.add(marks);
   }
 
-  return { roadMeshCount, buildingMeshCount, shadowMeshCount, laneMarkCount: roadDashes.length, roadSamples };
+  return {
+    roadMeshCount,
+    inferredRoadMeshCount,
+    buildingMeshCount,
+    shadowMeshCount,
+    laneMarkCount: roadDashes.length,
+    roadSamples
+  };
 }
