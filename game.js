@@ -50,10 +50,10 @@ if (isTestMode) {
       playerModel:player?.name||null, carIndex:currentCarIndex,
       playerBounds:playerSize?{length:Number(Math.max(playerSize.x,playerSize.z).toFixed(3)),width:Number(Math.min(playerSize.x,playerSize.z).toFixed(3)),height:Number(playerSize.y.toFixed(3))}:null,
       tokyoCityLoaded:Boolean(world.tokyoCity),
-      tokyoSpawn:{x:world.tokyoSpawn.x,y:world.tokyoSpawn.y,z:world.tokyoSpawn.z},
+      tokyoSpawn:{x:world.tokyoSpawn.x,y:world.tokyoSpawn.y,z:world.tokyoSpawn.z},\n      tokyoSpawnRoadVerified:world.tokyoSpawnRoadVerified,\n      driveSurfaceY:world.driveSurfaceY,
       tokyoSpawnYaw:world.tokyoSpawnYaw,
       tokyoSpawnClearDistance:world.tokyoSpawnClearDistance,
-      tokyoRoadMeshCount:world.tokyoRoadMeshCount,
+      tokyoRoadMeshCount:world.tokyoRoadMeshCount,\n      tokyoDrivableRoadMeshCount:world.tokyoDrivableRoadMeshCount,\n      tokyoSpawnRoadVerified:world.tokyoSpawnRoadVerified,
       tokyoInferredRoadMeshCount:world.tokyoInferredRoadMeshCount,
       tokyoBuildingMeshCount:world.tokyoBuildingMeshCount,
       tokyoLaneMarkCount:world.tokyoLaneMarkCount,
@@ -69,7 +69,7 @@ const world = {
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
   tokyoSpawn:new THREE.Vector3(0,0,0), tokyoSpawnYaw:0, tokyoSpawnClearDistance:0,
-  tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0,
+  tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0, tokyoDrivableRoadMeshCount:0,\n  tokyoSpawnRoadVerified:false, driveSurfaceY:0,
   tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
   tokyoCity:null, tokyoCityBounds:null
 };
@@ -347,8 +347,10 @@ async function loadTokyoCity() {
 
   if (meshCount === 0) throw new Error("The Tokyo GLB contains no renderable meshes.");
 
-  // Find a street-like open corridor, not merely an empty point between buildings.
-  // This prevents the player from spawning in a courtyard with no drivable exit.
+  // Identify and style the imported asphalt first, then choose the spawn by
+  // raycasting against the actual road triangles (not just open space).
+  const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
+
   const spawn = findTokyoRoadSpawn(
     world.buildings,
     {
@@ -358,29 +360,23 @@ async function loadTokyoCity() {
       maxZ: originalSize.z * 0.5
     },
     {
-      maxRadius: Math.min(265, originalSize.x * 0.5 - 18, originalSize.z * 0.5 - 18),
-      gridStep: 10,
-      maxForwardDistance: 90,
-      minForwardDistance: 28,
-      corridorHalfWidth: 4.6,
+      THREE,
+      roadMeshes: visualStats.roadMeshes,
+      maxRadius: Math.min(280, originalSize.x * 0.5 - 12, originalSize.z * 0.5 - 12),
+      maxForwardDistance: 64,
+      minForwardDistance: 18,
       vehicleClearance: 2.6
     }
   );
 
-  if (spawn) {
-    world.tokyoSpawn.set(spawn.x, 0, spawn.z);
-    world.tokyoSpawnYaw = spawn.yaw;
-    world.tokyoSpawnClearDistance = spawn.clearDistance;
-  } else {
-    // If this asset's collision proxies do not expose a safe street corridor,
-    // do not trap the player inside guessed AABBs. Keep the road mesh visible
-    // and disable only these approximate map collisions as a safe fallback.
-    world.buildings.length = 0;
-    world.tokyoSpawn.set(0, 0, 0);
-    world.tokyoSpawnYaw = 0;
-    world.tokyoSpawnClearDistance = 0;
-    console.warn("Tokyo map: no reliable drivable corridor was detected; approximate building collision was disabled.");
+  if (!spawn) {
+    throw new Error("No safe Tokyo road spawn was found. Building collisions were kept enabled.");
   }
+  world.tokyoSpawn.set(spawn.x, Number.isFinite(spawn.y) ? spawn.y : 0, spawn.z);
+  world.tokyoSpawnYaw = spawn.yaw;
+  world.tokyoSpawnClearDistance = spawn.clearDistance;
+  world.tokyoSpawnRoadVerified = Boolean(spawn.roadVerified);
+  world.driveSurfaceY = world.tokyoSpawn.y;
 
   scene.add(cityRoot);
   world.tokyoCity = cityRoot;
@@ -388,7 +384,7 @@ async function loadTokyoCity() {
 
   const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
   world.tokyoRoadMeshCount = visualStats.roadMeshCount;
-  world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;
+  world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;\n  world.tokyoDrivableRoadMeshCount = visualStats.drivableRoadMeshCount;
   world.tokyoBuildingMeshCount = visualStats.buildingMeshCount;
   world.tokyoLaneMarkCount = visualStats.laneMarkCount;
 
