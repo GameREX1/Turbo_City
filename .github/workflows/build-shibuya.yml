@@ -1,0 +1,65 @@
+# Isolated compile test; does not deploy to the live domain.
+name: Build Procedural Tokyo Shibuya
+
+on:
+  push:
+    branches:
+      - integration/procedural-tokyo
+    paths:
+      - ".gitmodules"
+      - "tokyo-engine"
+      - ".github/workflows/build-shibuya.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-shibuya:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out Turbo City and the Tokyo engine
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tokyo-engine/package.json
+
+      - name: Install Tokyo engine dependencies
+        working-directory: tokyo-engine
+        run: npm install --no-audit --no-fund
+
+      - name: Download CC0 rendering textures
+        working-directory: tokyo-engine
+        run: node tools/assets/fetch_textures.mjs
+
+      - name: Download Shibuya source data
+        working-directory: tokyo-engine
+        run: npm run fetch -- --area=shibuya
+
+      - name: Compile Shibuya city tiles
+        working-directory: tokyo-engine
+        run: npm run compile -- --area=shibuya
+
+      - name: Run engine geometry tests
+        working-directory: tokyo-engine
+        run: npm test
+
+      - name: Build browser app
+        working-directory: tokyo-engine
+        run: npm run build
+
+      - name: Upload compiled Shibuya preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: procedural-tokyo-shibuya-preview
+          path: tokyo-engine/dist/
+          if-no-files-found: error
+          retention-days: 3
