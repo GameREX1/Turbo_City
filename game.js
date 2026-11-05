@@ -501,8 +501,10 @@ function placeAtModeStart() {
   world.safeYaw=world.yaw;
   world.safeTimer=0;
   world.velocity.set(0,0,0);
-  world.yaw=0;
   world.speed=0;world.lateral=0;world.distance=0;
+  // Keep the road direction selected by findTokyoRoadSpawn. Resetting yaw
+  // here made the car face north even when the detected open road ran east/west,
+  // so it could spawn directly facing a building and appear unable to move.
   player.rotation.set(0,-world.yaw,0);
   if(world.mode==="sprint") {
     activitySystem.prepareRace();
