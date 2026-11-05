@@ -333,8 +333,8 @@ async function loadTokyoCity() {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
         const buildingSized =
-          size.x > 5 && size.z > 5 && size.y > 5 &&
-          size.x < 85 && size.z < 85 && size.y < 450;
+          size.x > 4 && size.z > 4 && size.y > 4 &&
+          size.x < 180 && size.z < 180 && size.y < 1200;
 
         if (buildingSized) {
           world.buildings.push({
@@ -386,7 +386,6 @@ async function loadTokyoCity() {
   world.tokyoCity = cityRoot;
   world.tokyoCityBounds = originalSize;
 
-  const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
   world.tokyoRoadMeshCount = visualStats.roadMeshCount;
   world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;
   world.tokyoDrivableRoadMeshCount = visualStats.drivableRoadMeshCount;
