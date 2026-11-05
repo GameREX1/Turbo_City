@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08111b">
+<title>Tokyo City Preview | Turbo City by GameRAX</title>
+<style>
+:root{color-scheme:dark;--cyan:#30ddf5;--panel:rgba(7,16,27,.9);--line:rgba(220,239,255,.16)}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101c29;color:#eef7fb;font-family:Inter,Arial,sans-serif}
+#viewer{position:fixed;inset:0}
+#viewer canvas{display:block;width:100%;height:100%}
+.top{position:fixed;z-index:2;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;pointer-events:none}
+.card{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 15px;backdrop-filter:blur(12px);box-shadow:0 10px 35px #0005}
+h1{font-size:15px;letter-spacing:1.4px;margin:0 0 5px}
+.sub{font-size:10px;color:#9fb3c4;line-height:1.5}
+.actions{display:flex;gap:7px;pointer-events:auto}
+button{border:1px solid #ffffff35;border-radius:8px;background:#071522e8;color:#eaf5fa;padding:9px 11px;font-size:10px;font-weight:800;letter-spacing:.6px;cursor:pointer}
+button:hover{border-color:var(--cyan);color:var(--cyan)}
+#status{position:fixed;z-index:3;left:50%;top:50%;transform:translate(-50%,-50%);width:min(390px,calc(100vw - 32px));padding:20px;background:var(--panel);border:1px solid #30ddf555;border-radius:14px;box-shadow:0 15px 60px #0008;text-align:center}
+#status h2{font-size:15px;margin:0 0 8px}
+#status p{font-size:11px;color:#a9bdcc;line-height:1.6;margin:0 0 13px}
+.track{height:6px;background:#ffffff1b;border-radius:9px;overflow:hidden}
+#bar{height:100%;width:0;background:linear-gradient(90deg,#16bfd9,#b9f8ff);transition:width .2s}
+#progress{font-size:10px;color:#a9bdcc;margin-top:8px}
+#details{position:fixed;z-index:2;left:16px;bottom:16px;max-width:min(520px,calc(100vw - 32px));background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:10px;color:#b7c7d4;line-height:1.6;backdrop-filter:blur(12px)}
+#details b{color:#eef7fb}
+#details a{color:var(--cyan);text-decoration:none}
+#error{display:none;color:#ffc2b8}
+@media(max-width:640px){.top{top:9px;left:9px;right:9px}.card{padding:10px}.actions{flex-wrap:wrap;justify-content:flex-end}#details{left:9px;bottom:9px}}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="viewer"></div>
+<div class="top">
+  <div class="card">
+    <h1>TOKYO TAKESHIBA · 3D PREVIEW</h1>
+    <div class="sub">Turbo City by GameRAX · Drag to orbit · Scroll to zoom · Right-drag to pan</div>
+  </div>
+  <div class="actions">
+    <button id="reset">RESET VIEW</button>
+    <button id="fullscreen">FULLSCREEN</button>
+    <a href="https://github.com/GameREX1/Turbo_City" target="_blank" rel="noopener"><button>GAME REPO</button></a>
+  </div>
+</div>
+<div id="status">
+  <h2 id="status-title">Loading Tokyo city model…</h2>
+  <p id="status-message">Downloading the 3D city asset from the Turbo City Worker. The file is about 79 MB.</p>
+  <div class="track"><div id="bar"></div></div>
+  <div id="progress">Preparing download…</div>
+</div>
+<div id="details">
+  <b>Model:</b> Tokyo Takeshiba PLATEAU Game-Ready Sample · <b>Scale:</b> metric, approximately 600 × 600 m.<br>
+  <b>License:</b> CC BY 4.0 · <a href="https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/ATTRIBUTION.txt" target="_blank" rel="noopener">Creator attribution</a> · <a href="https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/LICENSE_CC_BY_4.0.txt" target="_blank" rel="noopener">License text</a>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const MODEL_URL = "https://tokyo-map-proxy.uk7186979.workers.dev/tokyo-city.glb";
+const $ = (id) => document.getElementById(id);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9eb2c0);
+scene.fog = new THREE.Fog(0x9eb2c0, 900, 2600);
+
+const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 6000);
+camera.position.set(500, 360, 520);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+$("viewer").appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xf1f7ff, 0x65715e, 1.8));
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.25);
+sun.position.set(-350, 650, 280);
+scene.add(sun);
+
+const grid = new THREE.GridHelper(700, 70, 0x3b7584, 0x526b77);
+grid.position.y = -0.03;
+grid.material.transparent = true;
+grid.material.opacity = 0.28;
+scene.add(grid);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.055;
+controls.screenSpacePanning = true;
+controls.minDistance = 8;
+controls.maxDistance = 2200;
+controls.target.set(0, 35, 0);
+
+let modelRoot = null;
+let initialCamera = null;
+let initialTarget = null;
+
+function frameModel(root) {
+  const bounds = new THREE.Box3().setFromObject(root);
+  const size = bounds.getSize(new THREE.Vector3());
+  const center = bounds.getCenter(new THREE.Vector3());
+
+  // The asset is documented as metric and recentered near the world origin.
+  // Only center it horizontally and place its lowest point on the preview floor.
+  root.position.x -= center.x;
+  root.position.z -= center.z;
+  root.position.y -= bounds.min.y;
+
+  const framed = new THREE.Box3().setFromObject(root);
+  const framedSize = framed.getSize(new THREE.Vector3());
+  const framedCenter = framed.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(framedSize.x, framedSize.y, framedSize.z);
+  const distance = maxDim * 1.05 / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)));
+
+  camera.near = Math.max(0.1, maxDim / 10000);
+  camera.far = Math.max(6000, maxDim * 8);
+  camera.updateProjectionMatrix();
+  camera.position.set(
+    framedCenter.x + distance * 0.72,
+    framedCenter.y + distance * 0.54,
+    framedCenter.z + distance * 0.82
+  );
+  controls.target.copy(framedCenter);
+  controls.maxDistance = maxDim * 4;
+  controls.update();
+
+  initialCamera = camera.position.clone();
+  initialTarget = controls.target.clone();
+
+  return { size, framedSize };
+}
+
+function setError(message) {
+  $("status-title").textContent = "City model could not load";
+  $("status-message").textContent = message;
+  $("progress").textContent = "Check the Worker URL, CORS response, and GitHub Release asset.";
+  $("bar").style.background = "#ff806f";
+  $("bar").style.width = "100%";
+}
+
+const loader = new GLTFLoader();
+loader.load(
+  MODEL_URL,
+  (gltf) => {
+    modelRoot = gltf.scene;
+    scene.add(modelRoot);
+
+    let meshCount = 0;
+    let materialCount = 0;
+    let textureCount = 0;
+    modelRoot.traverse((object) => {
+      if (object.isMesh) {
+        meshCount++;
+        object.frustumCulled = true;
+        if (Array.isArray(object.material)) {
+          materialCount += object.material.length;
+          object.material.forEach((mat) => {
+            if (mat.map) textureCount++;
+            if (mat.normalMap) textureCount++;
+            if (mat.roughnessMap) textureCount++;
+            if (mat.metalnessMap) textureCount++;
+          });
+        } else if (object.material) {
+          materialCount++;
+          if (object.material.map) textureCount++;
+          if (object.material.normalMap) textureCount++;
+          if (object.material.roughnessMap) textureCount++;
+          if (object.material.metalnessMap) textureCount++;
+        }
+      }
+    });
+
+    const framed = frameModel(modelRoot);
+    const fmt = (n) => n.toFixed(1) + " m";
+    $("status-title").textContent = "Tokyo city loaded";
+    $("status-message").textContent =
+      "The GLB parsed successfully. Inspect the roads, buildings, surface materials, and scale before connecting it to driving physics.";
+    $("progress").textContent =
+      "Meshes: " + meshCount +
+      " · Materials: " + materialCount +
+      " · Texture maps: " + textureCount +
+      " · Bounds: " + fmt(framed.size.x) + " × " + fmt(framed.size.z) +
+      " · Height: " + fmt(framed.size.y);
+    $("bar").style.width = "100%";
+    setTimeout(() => { $("status").style.display = "none"; }, 5000);
+  },
+  (event) => {
+    if (event.total > 0) {
+      const pct = Math.min(99, event.loaded / event.total * 100);
+      $("bar").style.width = pct + "%";
+      $("progress").textContent =
+        Math.round(pct) + "% · " +
+        (event.loaded / 1048576).toFixed(1) + " MB / " +
+        (event.total / 1048576).toFixed(1) + " MB";
+    } else {
+      $("progress").textContent = (event.loaded / 1048576).toFixed(1) + " MB downloaded…";
+    }
+  },
+  (error) => {
+    console.error("Tokyo GLB load failed:", error);
+    setError("The browser could not download or parse the GLB. Open DevTools Console for the exact network or CORS error.");
+  }
+);
+
+$("reset").addEventListener("click", () => {
+  if (!initialCamera || !initialTarget) return;
+  camera.position.copy(initialCamera);
+  controls.target.copy(initialTarget);
+  controls.update();
+});
+$("fullscreen").addEventListener("click", async () => {
+  try {
+    if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  } catch (error) {
+    console.warn("Fullscreen unavailable:", error);
+  }
+});
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
