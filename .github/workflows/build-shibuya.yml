@@ -1,3 +1,4 @@
+# Isolated compile test; does not deploy to the live domain.
 name: Build Procedural Tokyo Shibuya
 
 on:
