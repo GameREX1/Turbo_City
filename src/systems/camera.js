@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, clamp, damp, $ }) {
-  const orbit = { yaw: 0, pitch: 0.10 };
+  const orbit = { yaw: 0, pitch: 0.04 };
   let dragging = false;
   let lastPointerX = 0;
   let lastPointerY = 0;
@@ -54,8 +54,8 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
       target = player.position.clone().addScaledVector(vehicleForward, 24);
       target.y += 1.38;
     } else {
-      const distance = world.cameraMode === 1 ? 14.8 : 8.8;
-      const baseHeight = world.cameraMode === 1 ? 5.55 : 3.35;
+      const distance = world.cameraMode === 1 ? 11.2 : 6.5;
+      const baseHeight = world.cameraMode === 1 ? 4.15 : 2.45;
       const orbitForward = new THREE.Vector3(
         Math.sin(world.yaw + orbit.yaw),
         0,
@@ -63,9 +63,9 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
       );
 
       desired = player.position.clone().addScaledVector(orbitForward, -distance);
-      desired.y += baseHeight + speedFactor * 0.7 + orbit.pitch * distance;
-      target = player.position.clone().addScaledVector(vehicleForward, world.cameraMode === 1 ? 7.4 : 5.8);
-      target.y += 1.12;
+      desired.y += baseHeight + speedFactor * 0.45 + orbit.pitch * distance;
+      target = player.position.clone().addScaledVector(vehicleForward, world.cameraMode === 1 ? 5.3 : 3.2);
+      target.y += world.cameraMode === 1 ? 1.05 : 0.96;
     }
 
     // Gentle speed-dependent follow keeps the car framed during fast turns.
@@ -73,7 +73,7 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
     const follow = 1 - Math.exp(-followRate * dt);
     camera.position.lerp(desired, follow);
     camera.lookAt(target);
-    camera.fov = damp(camera.fov, 63 + speedFactor * 7, 3.2, dt);
+    camera.fov = damp(camera.fov, 60 + speedFactor * 6, 3.2, dt);
     camera.updateProjectionMatrix();
   }
 
