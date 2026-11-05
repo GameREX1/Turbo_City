@@ -36,6 +36,9 @@ jobs:
       - name: Test Tokyo asset proxy
         run: node tests/worker-proxy.mjs
 
+      - name: Test Tokyo road spawn selection
+        run: node tests/tokyo-spawn.mjs
+
       - name: Start local web server
         run: |
           python3 -m http.server 4173 > /tmp/turbo-city-http.log 2>&1 &
