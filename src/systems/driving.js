@@ -73,26 +73,41 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     const old=player.position.clone();
     let hitSomething=false;
     player.position.addScaledVector(world.velocity,dt);
-    player.position.y=0;
+    player.position.y=Number.isFinite(world.driveSurfaceY)?world.driveSurfaceY:0;
   
     // Stay within the designed city limits.
     if(Math.abs(player.position.x)>WORLD_LIMIT||Math.abs(player.position.z)>WORLD_LIMIT) {
       player.position.copy(old);world.velocity.multiplyScalar(-.16);hitSomething=true;toast("CITY LIMIT — TURN BACK",1);
     }
   
-    // Building collision.
+    // Swept car-footprint collision prevents the vehicle from clipping through
+    // building AABBs, including when travelling quickly or after a turn.
+    const halfLength=spec.length*.5+.35;
+    const halfWidth=spec.width*.5+.35;
+    const extentX=Math.abs(Math.sin(world.yaw))*halfLength+
+      Math.abs(Math.cos(world.yaw))*halfWidth;
+    const extentZ=Math.abs(Math.cos(world.yaw))*halfLength+
+      Math.abs(Math.sin(world.yaw))*halfWidth;
+    const moveX=player.position.x-old.x;
+    const moveZ=player.position.z-old.z;
+    const moveDistance=Math.hypot(moveX,moveZ);
+    const sweepSteps=Math.max(1,Math.min(12,Math.ceil(moveDistance/.75)));
     let collision=false;
-    for(const b of world.buildings) {
-      if(Math.abs(player.position.x-b.x)<b.w*.5+1.45 && Math.abs(player.position.z-b.z)<b.d*.5+2.35) {
-        collision=true;break;
-      }
+    for(let step=1;step<=sweepSteps&&!collision;step++) {
+      const t=step/sweepSteps;
+      const testX=old.x+moveX*t;
+      const testZ=old.z+moveZ*t;
+      collision=world.buildings.some(b=>
+        Math.abs(testX-b.x)<b.w*.5+extentX &&
+        Math.abs(testZ-b.z)<b.d*.5+extentZ
+      );
     }
     if(collision) {
-      player.position.x=old.x;player.position.z=old.z;
-      world.velocity.multiplyScalar(-.28);
+      player.position.copy(old);
+      world.velocity.multiplyScalar(-.12);
       hitSomething=true;
       world.score=Math.max(0,world.score-2);
-      if(Math.abs(speedAlong)>7)toast("IMPACT — WATCH THE ROAD",1.1);
+      if(Math.abs(speedAlong)>7)toast("BUILDING — STAY ON THE ROAD",1.1);
     }
   
     // Cones in the practice district are solid visual obstacles.
