@@ -158,6 +158,8 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
   return {
     roadMeshCount,
     inferredRoadMeshCount,
+    roadMeshes: drivableRoadMeshes,
+    drivableRoadMeshCount: drivableRoadMeshes.length,
     buildingMeshCount,
     shadowMeshCount,
     laneMarkCount: roadDashes.length,
