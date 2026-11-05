@@ -1,11 +1,14 @@
 const ROAD_PATTERN = /road|street|asphalt|carriage|pavement|道路|車道|舗装/i;
 const BUILDING_PATTERN = /building|house|tower|structure|facade|建物|ビル|外壁/i;
-const MARKING_PATTERN = /marking|lane|stripe|crosswalk|zebra|白線|車線/i;\nconst DRIVEABLE_ROAD_PATTERN = /road|street|asphalt|carriage|tran[_-]|道路|車道/i;\nconst SIDEWALK_PATTERN = /sidewalk|footpath|walkway|pedestrian|歩道/i;
+const MARKING_PATTERN = /marking|lane|stripe|crosswalk|zebra|白線|車線/i;
+const DRIVEABLE_ROAD_PATTERN = /road|street|asphalt|carriage|tran[_-]|道路|車道/i;
+const SIDEWALK_PATTERN = /sidewalk|footpath|walkway|pedestrian|歩道/i;
 
 export function enhanceTokyoCity(root, scene, THREE, renderer) {
   const styledMaterials = new Map();
   const roadDashes = [];
-  const roadSamples = [];\n  const drivableRoadMeshes = [];
+  const roadSamples = [];
+  const drivableRoadMeshes = [];
   let roadMeshCount = 0;
   let inferredRoadMeshCount = 0;
   let buildingMeshCount = 0;
@@ -77,7 +80,11 @@ export function enhanceTokyoCity(root, scene, THREE, renderer) {
     // Some city GLBs name road surfaces generically. A flat, low, dark asphalt
     // segment is a safe secondary signal when the node/material has no road name.
     const inferredRoad = !namedRoad && isLowFlatSegment && darkUntexturedSurface;
-    const isRoad = namedRoad || inferredRoad;\n    const drivableRoad = !isMarkedSurface && !SIDEWALK_PATTERN.test(identity) &&\n      (DRIVEABLE_ROAD_PATTERN.test(identity) || inferredRoad) &&\n      size.y <= 12 && width >= 4.2 && width <= 700 && length >= 8;\n    if (drivableRoad) drivableRoadMeshes.push(object);
+    const isRoad = namedRoad || inferredRoad;
+    const drivableRoad = !isMarkedSurface && !SIDEWALK_PATTERN.test(identity) &&
+      (DRIVEABLE_ROAD_PATTERN.test(identity) || inferredRoad) &&
+      size.y <= 12 && width >= 4.2 && width <= 700 && length >= 8;
+    if (drivableRoad) drivableRoadMeshes.push(object);
     const isBuilding = size.y > 7 && size.x > 3 && size.z > 3 &&
       size.x < 110 && size.z < 110 && size.y < 450;
 
