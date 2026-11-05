@@ -3,7 +3,7 @@ import { findTokyoRoadSpawn } from "../src/world/tokyo-spawn.js";
 
 const bounds = { minX: -120, maxX: 120, minZ: -120, maxZ: 120 };
 const buildings = [
-  { x: 0, z: 0, w: 30, d: 30 },
+  { x: 60, z: 0, w: 14, d: 18 },
   { x: -12, z: 0, w: 10, d: 210 },
   { x: 12, z: 0, w: 10, d: 210 },
   { x: 0, z: -112, w: 38, d: 12 },
