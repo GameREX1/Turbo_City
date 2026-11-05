@@ -54,7 +54,8 @@ const world = {
   frameCount:0, physicsTicks:0, lastFrameDt:0,
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
-  velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false
+  velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
+  tokyoSpawn:new THREE.Vector3(0,0,0), tokyoCity:null, tokyoCityBounds:null
 };
 
 if(isSmokeMode) {
@@ -305,20 +306,17 @@ async function loadTokyoCity() {
     object.frustumCulled = true;
 
     // Create lightweight, approximate AABB collision boxes for building-sized
-    // meshes. Huge merged ground/road meshes are deliberately excluded.
-    if (colliderCount < 3500) {
+    // meshes. Large merged terrain/road meshes and thin road markings are excluded.
+    if (!isTestMode && colliderCount < 2500) {
       const bounds = new THREE.Box3().setFromObject(object);
       if (!bounds.isEmpty()) {
         const size = bounds.getSize(new THREE.Vector3());
         const center = bounds.getCenter(new THREE.Vector3());
-        const namedBuilding = /building|bldg|house|tower|structure/i.test(object.name || "");
         const buildingSized =
-          size.x > 4 && size.z > 4 && size.y > 4 &&
-          size.x < 100 && size.z < 100 && size.y < 450;
+          size.x > 5 && size.z > 5 && size.y > 5 &&
+          size.x < 85 && size.z < 85 && size.y < 450;
 
-        if ((namedBuilding || buildingSized) &&
-            size.x > 2 && size.z > 2 &&
-            size.x < 180 && size.z < 180) {
+        if (buildingSized) {
           world.buildings.push({
             x: center.x,
             z: center.z,
@@ -332,6 +330,31 @@ async function loadTokyoCity() {
   });
 
   if (meshCount === 0) throw new Error("The Tokyo GLB contains no renderable meshes.");
+
+  // Pick a starting point that is outside the generated building colliders.
+  // Search outward from the map center so the car does not spawn inside a tower.
+  const isClearSpawn = (x, z) => world.buildings.every((building) =>
+    Math.abs(x - building.x) >= building.w * 0.5 + 4.5 ||
+    Math.abs(z - building.z) >= building.d * 0.5 + 5.5
+  );
+  let spawnFound = false;
+  for (let radius = 0; radius <= 300 && !spawnFound; radius += 10) {
+    const steps = radius === 0 ? 1 : Math.max(12, Math.ceil((Math.PI * 2 * radius) / 18));
+    for (let step = 0; step < steps; step++) {
+      const angle = (step / steps) * Math.PI * 2;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      if (isClearSpawn(x, z)) {
+        world.tokyoSpawn.set(x, 0, z);
+        spawnFound = true;
+        break;
+      }
+    }
+  }
+  if (!spawnFound) {
+    world.tokyoSpawn.set(0, 0, 0);
+    console.warn("Tokyo map: no collision-free spawn candidate found; using map center.");
+  }
 
   scene.add(cityRoot);
   world.tokyoCity = cityRoot;
@@ -349,6 +372,20 @@ async function loadTokyoCity() {
 }
 
 async function buildWorld() {
+  // Browser automation keeps using the deterministic procedural test world;
+  // normal players load the full Tokyo GLB from the Worker.
+  if (isTestMode) {
+    roadSystem.buildGroundAndRoads();
+    buildingSystem.buildCity();
+    activitySystem.buildSkillDistrict();
+    activitySystem.buildCollectibles();
+    trafficSystem.buildTraffic();
+    scene.traverse((object) => {
+      if (object.isMesh) object.castShadow = false;
+    });
+    return;
+  }
+
   try {
     const result = await loadTokyoCity();
     activitySystem.buildCollectibles();
@@ -418,7 +455,9 @@ function selectMode(mode) {
 document.querySelectorAll(".mode").forEach(btn=>btn.addEventListener("click",()=>selectMode(btn.dataset.mode)));
 
 function placeAtModeStart() {
-  const spawn=world.mode==="skill"?new THREE.Vector3(400,0,-330):new THREE.Vector3(0,0,0);
+  const spawn=world.mode==="skill"
+    ? new THREE.Vector3(400,0,-330)
+    : (world.tokyoCity ? world.tokyoSpawn.clone() : new THREE.Vector3(0,0,0));
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
