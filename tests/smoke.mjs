@@ -54,8 +54,13 @@ try {
         null,
         { timeout: 45000, polling: 200 }
       );
-      assert.equal((await state()).playerModel, "TurboCity_Bugatti_Divo", "uploaded Bugatti Divo GLB should replace the fallback vehicle");
-      console.log("BUGATTI DIVO ASSET TRACE:", await state());
+      const bugattiState = await state();
+      assert.equal(bugattiState.playerModel, "TurboCity_Bugatti_Divo", "uploaded Bugatti Divo GLB should replace the fallback vehicle");
+      assert.ok(bugattiState.playerBounds?.length > 4.0 && bugattiState.playerBounds.length < 6.2,
+        "Bugatti model should be full vehicle length (about five metres); got " + JSON.stringify(bugattiState.playerBounds));
+      assert.ok(bugattiState.playerBounds?.width > 1.6 && bugattiState.playerBounds.width < 3.0,
+        "Bugatti model should have a realistic vehicle width; got " + JSON.stringify(bugattiState.playerBounds));
+      console.log("BUGATTI DIVO ASSET TRACE:", bugattiState);
     }
     await page.locator("#next-car").click();
   }
@@ -73,8 +78,15 @@ try {
 
   await page.locator("#start-button").click();
   assert.equal(await page.locator("#hud").isVisible(), true, "HUD should appear after starting");
+  await page.waitForTimeout(350);
 
   const start = await state();
+  const closeChaseDistance = Math.hypot(
+    start.cameraPosition.x - start.position.x,
+    start.cameraPosition.z - start.position.z
+  );
+  assert.ok(closeChaseDistance > 5.4 && closeChaseDistance < 8.0,
+    "default chase camera should stay close behind the car; distance " + closeChaseDistance.toFixed(2));
 
   // Drive forward and verify both speed and world position change.
   await page.keyboard.down("w");
@@ -135,6 +147,14 @@ try {
   // Camera and pause/resume.
   await page.locator("#camera-button").click();
   assert.match(await page.locator("#camera-button").innerText(), /FAR CHASE/);
+  await page.waitForTimeout(350);
+  const farCameraState = await state();
+  const farChaseDistance = Math.hypot(
+    farCameraState.cameraPosition.x - farCameraState.position.x,
+    farCameraState.cameraPosition.z - farCameraState.position.z
+  );
+  assert.ok(farChaseDistance > closeChaseDistance + 3.0,
+    "far chase mode should move the camera clearly farther back");
   await page.keyboard.press("c");
   assert.match(await page.locator("#camera-button").innerText(), /HOOD CAM/);
 
