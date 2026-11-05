@@ -1,4 +1,5 @@
-const ASSET_URL = "https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/Tokyo_Takeshiba_PLATEAU_GameReady_Free.glb";
+const CITY_ASSET_URL = "https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/Tokyo_Takeshiba_PLATEAU_GameReady_Free.glb";
+const GROUND_TEXTURE_URL = "https://github.com/GameREX1/Turbo_City/releases/download/tokyo-city-v1/Tokyo_Ground_Albedo_2K.png";
 const ALLOWED_ORIGIN = "https://turbocity.gamerax.online";
 
 function corsHeaders() {
@@ -13,6 +14,22 @@ function corsHeaders() {
   };
 }
 
+function resolveAsset(pathname) {
+  const path = decodeURIComponent(pathname || "/").toLowerCase();
+  if (path === "/" || path.endsWith("/tokyo-city.glb") || path.endsWith("/tokyo_takeshiba_plateau_gameready_free.glb")) {
+    return { url: CITY_ASSET_URL, contentType: "model/gltf-binary", cacheTtl: 86400 };
+  }
+
+  // GLTFLoader resolves external image URIs relative to the GLB's Worker URL.
+  // Map the original ground-albedo filename and its texture-folder variants
+  // to the separately uploaded PNG release asset.
+  if (path.includes("ground") && path.includes("alb") && path.endsWith(".png")) {
+    return { url: GROUND_TEXTURE_URL, contentType: "image/png", cacheTtl: 86400 };
+  }
+
+  return null;
+}
+
 export default {
   async fetch(request) {
     const headers = corsHeaders();
@@ -25,16 +42,20 @@ export default {
       return new Response("Method not allowed", { status: 405, headers });
     }
 
+    const asset = resolveAsset(new URL(request.url).pathname);
+    if (!asset) {
+      return new Response("Asset not found", { status: 404, headers });
+    }
+
     const range = request.headers.get("Range");
     let upstream;
 
     try {
-      upstream = await fetch(ASSET_URL, {
+      upstream = await fetch(asset.url, {
         method: request.method,
         headers: range ? { "Range": range } : undefined,
         redirect: "follow",
-        // Cache the full city asset at Cloudflare's edge; do not cache byte ranges.
-        cf: range ? undefined : { cacheEverything: true, cacheTtl: 86400 }
+        cf: range ? undefined : { cacheEverything: true, cacheTtl: asset.cacheTtl }
       });
     } catch (error) {
       return new Response("Could not reach the GitHub release asset", { status: 502, headers });
@@ -44,8 +65,8 @@ export default {
       return new Response("GitHub release asset returned HTTP " + upstream.status, { status: 502, headers });
     }
 
-    headers["Content-Type"] = "model/gltf-binary";
-    headers["Cache-Control"] = range ? "public, max-age=3600" : "public, max-age=86400";
+    headers["Content-Type"] = asset.contentType;
+    headers["Cache-Control"] = range ? "public, max-age=3600" : "public, max-age=" + asset.cacheTtl;
     headers["Accept-Ranges"] = upstream.headers.get("Accept-Ranges") || "bytes";
 
     const contentLength = upstream.headers.get("Content-Length");
