@@ -33,6 +33,9 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Test Tokyo asset proxy
+        run: node tests/worker-proxy.mjs
+
       - name: Start local web server
         run: |
           python3 -m http.server 4173 > /tmp/turbo-city-http.log 2>&1 &
