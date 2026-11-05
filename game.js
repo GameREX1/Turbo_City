@@ -11,6 +11,8 @@ import { CARS as cars, ROAD_SPACING, WORLD_LIMIT } from "./src/config/game.js";
 import { getQualityPreset } from "./src/config/quality.js";
 import { createRoadModule } from "./src/world/roads.js";
 import { createBuildingModule } from "./src/world/buildings.js";
+import { findTokyoRoadSpawn } from "./src/world/tokyo-spawn.js";
+import { enhanceTokyoCity } from "./src/world/tokyo-visuals.js";
 import { createActivityModule } from "./src/world/activities.js";
 import { createTrafficModule } from "./src/world/traffic.js";
 import { createVehicleModule } from "./src/vehicles/car.js";
@@ -49,6 +51,11 @@ if (isTestMode) {
       playerBounds:playerSize?{length:Number(Math.max(playerSize.x,playerSize.z).toFixed(3)),width:Number(Math.min(playerSize.x,playerSize.z).toFixed(3)),height:Number(playerSize.y.toFixed(3))}:null,
       tokyoCityLoaded:Boolean(world.tokyoCity),
       tokyoSpawn:{x:world.tokyoSpawn.x,y:world.tokyoSpawn.y,z:world.tokyoSpawn.z},
+      tokyoSpawnYaw:world.tokyoSpawnYaw,
+      tokyoSpawnClearDistance:world.tokyoSpawnClearDistance,
+      tokyoRoadMeshCount:world.tokyoRoadMeshCount,
+      tokyoBuildingMeshCount:world.tokyoBuildingMeshCount,
+      tokyoLaneMarkCount:world.tokyoLaneMarkCount,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
     };
   };
@@ -60,7 +67,9 @@ const world = {
   route:[], mode:"free", toastTimer:0, started:false, paused:false, cameraMode:0,
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
-  tokyoSpawn:new THREE.Vector3(0,0,0), tokyoCity:null, tokyoCityBounds:null
+  tokyoSpawn:new THREE.Vector3(0,0,0), tokyoSpawnYaw:0, tokyoSpawnClearDistance:0,
+  tokyoRoadMeshCount:0, tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
+  tokyoCity:null, tokyoCityBounds:null
 };
 
 if(isSmokeMode) {
@@ -336,44 +345,61 @@ async function loadTokyoCity() {
 
   if (meshCount === 0) throw new Error("The Tokyo GLB contains no renderable meshes.");
 
-  // Pick a starting point that is outside the generated building colliders.
-  // Search outward from the map center so the car does not spawn inside a tower.
-  const isClearSpawn = (x, z) => world.buildings.every((building) =>
-    Math.abs(x - building.x) >= building.w * 0.5 + 4.5 ||
-    Math.abs(z - building.z) >= building.d * 0.5 + 5.5
-  );
-  let spawnFound = false;
-  for (let radius = 0; radius <= 300 && !spawnFound; radius += 10) {
-    const steps = radius === 0 ? 1 : Math.max(12, Math.ceil((Math.PI * 2 * radius) / 18));
-    for (let step = 0; step < steps; step++) {
-      const angle = (step / steps) * Math.PI * 2;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      if (isClearSpawn(x, z)) {
-        world.tokyoSpawn.set(x, 0, z);
-        spawnFound = true;
-        break;
-      }
+  // Find a street-like open corridor, not merely an empty point between buildings.
+  // This prevents the player from spawning in a courtyard with no drivable exit.
+  const spawn = findTokyoRoadSpawn(
+    world.buildings,
+    {
+      minX: -originalSize.x * 0.5,
+      maxX: originalSize.x * 0.5,
+      minZ: -originalSize.z * 0.5,
+      maxZ: originalSize.z * 0.5
+    },
+    {
+      maxRadius: Math.min(265, originalSize.x * 0.5 - 18, originalSize.z * 0.5 - 18),
+      gridStep: 10,
+      maxForwardDistance: 90,
+      minForwardDistance: 28,
+      corridorHalfWidth: 4.6,
+      vehicleClearance: 2.6
     }
-  }
-  if (!spawnFound) {
+  );
+
+  if (spawn) {
+    world.tokyoSpawn.set(spawn.x, 0, spawn.z);
+    world.tokyoSpawnYaw = spawn.yaw;
+    world.tokyoSpawnClearDistance = spawn.clearDistance;
+  } else {
+    // If this asset's collision proxies do not expose a safe street corridor,
+    // do not trap the player inside guessed AABBs. Keep the road mesh visible
+    // and disable only these approximate map collisions as a safe fallback.
+    world.buildings.length = 0;
     world.tokyoSpawn.set(0, 0, 0);
-    console.warn("Tokyo map: no collision-free spawn candidate found; using map center.");
+    world.tokyoSpawnYaw = 0;
+    world.tokyoSpawnClearDistance = 0;
+    console.warn("Tokyo map: no reliable drivable corridor was detected; approximate building collision was disabled.");
   }
 
   scene.add(cityRoot);
   world.tokyoCity = cityRoot;
   world.tokyoCityBounds = originalSize;
 
-  console.info("Turbo City: Tokyo map loaded", {
+  const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
+  world.tokyoRoadMeshCount = visualStats.roadMeshCount;
+  world.tokyoBuildingMeshCount = visualStats.buildingMeshCount;
+  world.tokyoLaneMarkCount = visualStats.laneMarkCount;
+
+  console.info("Turbo City: Tokyo map loaded and visually enhanced", {
     meshCount,
     colliderCount,
     width: originalSize.x,
     depth: originalSize.z,
-    height: originalSize.y
+    height: originalSize.y,
+    spawn,
+    visualStats
   });
 
-  return { meshCount, colliderCount, size: originalSize };
+  return { meshCount, colliderCount, size: originalSize, spawn, visualStats };
 }
 
 async function buildWorld() {
@@ -414,9 +440,11 @@ async function buildWorld() {
       (error?.message || "Check the Worker URL and CORS settings."));
   }
 
-  scene.traverse((object) => {
-    if (object.isMesh) object.castShadow = false;
-  });
+  if (!world.tokyoCity) {
+    scene.traverse((object) => {
+      if (object.isMesh) object.castShadow = false;
+    });
+  }
 }
 
 function updateGarage() {
@@ -466,7 +494,8 @@ function placeAtModeStart() {
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
-  world.safeYaw=0;
+  world.yaw=world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
+  world.safeYaw=world.yaw;
   world.safeTimer=0;
   world.velocity.set(0,0,0);
   world.yaw=0;
