@@ -6,6 +6,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { CARS as cars, ROAD_SPACING, WORLD_LIMIT } from "./src/config/game.js";
 import { getQualityPreset } from "./src/config/quality.js";
 import { createRoadModule } from "./src/world/roads.js";
@@ -23,6 +24,7 @@ const isSmokeMode = queryFlags.has("ciDebug");
 const isVisualTestMode = queryFlags.has("ciVisual");
 const isTestMode = isSmokeMode || isVisualTestMode;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const TOKYO_CITY_MODEL_URL = "https://tokyo-map-proxy.uk7186979.workers.dev/tokyo-city.glb";
 const damp = (a, b, speed, dt) => THREE.MathUtils.damp(a, b, speed, dt);
 const rand = (min, max) => min + Math.random() * (max - min);
 const input = { gas:false, brake:false, reverse:false, left:false, right:false };
@@ -245,13 +247,134 @@ function buildRenderer() {
   createComposer();
 }
 
-function buildWorld() {
-  roadSystem.buildGroundAndRoads();
-  buildingSystem.buildCity();
-  activitySystem.buildSkillDistrict();
-  activitySystem.buildCollectibles();
-  trafficSystem.buildTraffic();
-  scene.traverse(object=>{if(object.isMesh)object.castShadow=false;});
+async function loadTokyoCity() {
+  const loader = new GLTFLoader();
+
+  const gltf = await new Promise((resolve, reject) => {
+    loader.load(
+      TOKYO_CITY_MODEL_URL,
+      resolve,
+      (event) => {
+        if (event.total > 0) {
+          const percent = Math.min(44, 14 + (event.loaded / event.total) * 30);
+          setLoading(percent, "DOWNLOADING TOKYO CITY " +
+            Math.round(event.loaded / 1048576) + " / " +
+            Math.round(event.total / 1048576) + " MB…");
+        } else {
+          setLoading(24, "DOWNLOADING TOKYO CITY…");
+        }
+      },
+      reject
+    );
+  });
+
+  if (!gltf.scene) throw new Error("The Tokyo GLB did not contain a scene.");
+
+  const cityRoot = gltf.scene;
+  cityRoot.updateMatrixWorld(true);
+
+  const originalBounds = new THREE.Box3().setFromObject(cityRoot);
+  if (originalBounds.isEmpty()) throw new Error("The Tokyo GLB contains no visible geometry.");
+
+  const originalSize = originalBounds.getSize(new THREE.Vector3());
+  if (originalSize.x < 100 || originalSize.z < 100) {
+    throw new Error("The Tokyo GLB is smaller than expected; check its scale.");
+  }
+
+  const originalCenter = originalBounds.getCenter(new THREE.Vector3());
+
+  // The supplied asset is metric. Center it in the driving world and place its
+  // lowest point on the road plane without scaling or changing its materials.
+  cityRoot.position.x -= originalCenter.x;
+  cityRoot.position.z -= originalCenter.z;
+  cityRoot.position.y -= originalBounds.min.y;
+  cityRoot.updateMatrixWorld(true);
+
+  world.buildings.length = 0;
+  world.traffic.length = 0;
+
+  let meshCount = 0;
+  let colliderCount = 0;
+
+  cityRoot.traverse((object) => {
+    if (!object.isMesh || !object.geometry) return;
+
+    meshCount++;
+    object.castShadow = false;
+    object.receiveShadow = true;
+    object.frustumCulled = true;
+
+    // Create lightweight, approximate AABB collision boxes for building-sized
+    // meshes. Huge merged ground/road meshes are deliberately excluded.
+    if (colliderCount < 3500) {
+      const bounds = new THREE.Box3().setFromObject(object);
+      if (!bounds.isEmpty()) {
+        const size = bounds.getSize(new THREE.Vector3());
+        const center = bounds.getCenter(new THREE.Vector3());
+        const namedBuilding = /building|bldg|house|tower|structure/i.test(object.name || "");
+        const buildingSized =
+          size.x > 4 && size.z > 4 && size.y > 4 &&
+          size.x < 100 && size.z < 100 && size.y < 450;
+
+        if ((namedBuilding || buildingSized) &&
+            size.x > 2 && size.z > 2 &&
+            size.x < 180 && size.z < 180) {
+          world.buildings.push({
+            x: center.x,
+            z: center.z,
+            w: size.x,
+            d: size.z
+          });
+          colliderCount++;
+        }
+      }
+    }
+  });
+
+  if (meshCount === 0) throw new Error("The Tokyo GLB contains no renderable meshes.");
+
+  scene.add(cityRoot);
+  world.tokyoCity = cityRoot;
+  world.tokyoCityBounds = originalSize;
+
+  console.info("Turbo City: Tokyo map loaded", {
+    meshCount,
+    colliderCount,
+    width: originalSize.x,
+    depth: originalSize.z,
+    height: originalSize.y
+  });
+
+  return { meshCount, colliderCount, size: originalSize };
+}
+
+async function buildWorld() {
+  try {
+    const result = await loadTokyoCity();
+    activitySystem.buildCollectibles();
+    // The Tokyo asset supplies its own terrain, streets and buildings, so the
+    // old procedural grid is not drawn over it.
+    document.querySelectorAll('.mode[data-mode="skill"]').forEach((button) => {
+      button.disabled = true;
+      button.title = "Skill course is not yet aligned to the Tokyo map.";
+    });
+    console.info("Tokyo driving world ready.", result);
+  } catch (error) {
+    console.error("Tokyo map failed to load; restoring the original procedural city.", error);
+    world.buildings.length = 0;
+    world.traffic.length = 0;
+    roadSystem.buildGroundAndRoads();
+    buildingSystem.buildCity();
+    activitySystem.buildSkillDistrict();
+    activitySystem.buildCollectibles();
+    trafficSystem.buildTraffic();
+    showError("Tokyo map could not load. The original city has been restored. " +
+      (error?.message || "Check the Worker URL and CORS settings."));
+  }
+
+  scene.traverse((object) => {
+    if (object.isMesh) object.castShadow = false;
+  });
 }
 
 function updateGarage() {
@@ -459,9 +582,9 @@ async function init() {
     pmremGenerator.dispose();
     loadOutdoorCarEnvironment();
 
-    setLoading(14,"BUILDING CITY STREETS…");
-    buildWorld();
-    setLoading(48,"PREPARING CITY…");
+    setLoading(14,"LOADING TOKYO CITY MAP…");
+    await buildWorld();
+    setLoading(48,"PREPARING DRIVING EXPERIENCE…");
     // Do not expose the procedural fallback while the detailed 3D car is loading.
     setLoading(58,"LOADING BUGATTI DIVO 3D MODEL…");
     const bugattiLoaded=await vehicleSystem.loadCarModel();
