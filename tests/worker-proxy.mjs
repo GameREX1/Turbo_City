@@ -13,11 +13,11 @@ const worker = globalThis.__tokyoProxy;
 
 const city = resolveAsset("/tokyo-city.glb");
 assert.equal(city?.contentType, "model/gltf-binary");
-assert.match(city?.url || "", /Tokyo_Takeshiba_PLATEAU_GameReady_Free\\.glb$/);
+assert.ok((city?.url || "").endsWith("Tokyo_Takeshiba_PLATEAU_GameReady_Free.glb"));
 
 const originalTexturePath = resolveAsset("/textures/tokyo_ground_albido_2k.png");
 assert.equal(originalTexturePath?.contentType, "image/png");
-assert.match(originalTexturePath?.url || "", /Tokyo_Ground_Albedo_2K\\.png$/);
+assert.ok((originalTexturePath?.url || "").endsWith("Tokyo_Ground_Albedo_2K.png"));
 
 const textureAlias = resolveAsset("/tokyo_ground_albedo_2k.png");
 assert.equal(textureAlias?.contentType, "image/png");
