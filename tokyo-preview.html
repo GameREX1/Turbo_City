@@ -113,11 +113,10 @@ function frameModel(root) {
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
 
-  // The asset is documented as metric and recentered near the world origin.
-  // Only center it horizontally and place its lowest point on the preview floor.
+  // The source is already authored in metric space near world origin.
+  // Preserve Y so the preview shows the true relationship between streets and origin.
   root.position.x -= center.x;
   root.position.z -= center.z;
-  root.position.y -= bounds.min.y;
 
   const framed = new THREE.Box3().setFromObject(root);
   const framedSize = framed.getSize(new THREE.Vector3());
