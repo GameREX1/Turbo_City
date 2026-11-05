@@ -54,6 +54,7 @@ if (isTestMode) {
       tokyoSpawnYaw:world.tokyoSpawnYaw,
       tokyoSpawnClearDistance:world.tokyoSpawnClearDistance,
       tokyoRoadMeshCount:world.tokyoRoadMeshCount,
+      tokyoInferredRoadMeshCount:world.tokyoInferredRoadMeshCount,
       tokyoBuildingMeshCount:world.tokyoBuildingMeshCount,
       tokyoLaneMarkCount:world.tokyoLaneMarkCount,
       frameCount:world.frameCount, physicsTicks:world.physicsTicks, lastFrameDt:world.lastFrameDt
@@ -68,7 +69,8 @@ const world = {
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
   tokyoSpawn:new THREE.Vector3(0,0,0), tokyoSpawnYaw:0, tokyoSpawnClearDistance:0,
-  tokyoRoadMeshCount:0, tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
+  tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0,
+  tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
   tokyoCity:null, tokyoCityBounds:null
 };
 
@@ -386,6 +388,7 @@ async function loadTokyoCity() {
 
   const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
   world.tokyoRoadMeshCount = visualStats.roadMeshCount;
+  world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;
   world.tokyoBuildingMeshCount = visualStats.buildingMeshCount;
   world.tokyoLaneMarkCount = visualStats.laneMarkCount;
 
