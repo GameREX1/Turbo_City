@@ -50,10 +50,13 @@ if (isTestMode) {
       playerModel:player?.name||null, carIndex:currentCarIndex,
       playerBounds:playerSize?{length:Number(Math.max(playerSize.x,playerSize.z).toFixed(3)),width:Number(Math.min(playerSize.x,playerSize.z).toFixed(3)),height:Number(playerSize.y.toFixed(3))}:null,
       tokyoCityLoaded:Boolean(world.tokyoCity),
-      tokyoSpawn:{x:world.tokyoSpawn.x,y:world.tokyoSpawn.y,z:world.tokyoSpawn.z},\n      tokyoSpawnRoadVerified:world.tokyoSpawnRoadVerified,\n      driveSurfaceY:world.driveSurfaceY,
+      tokyoSpawn:{x:world.tokyoSpawn.x,y:world.tokyoSpawn.y,z:world.tokyoSpawn.z},
+      tokyoSpawnRoadVerified:world.tokyoSpawnRoadVerified,
+      driveSurfaceY:world.driveSurfaceY,
       tokyoSpawnYaw:world.tokyoSpawnYaw,
       tokyoSpawnClearDistance:world.tokyoSpawnClearDistance,
-      tokyoRoadMeshCount:world.tokyoRoadMeshCount,\n      tokyoDrivableRoadMeshCount:world.tokyoDrivableRoadMeshCount,\n      tokyoSpawnRoadVerified:world.tokyoSpawnRoadVerified,
+      tokyoRoadMeshCount:world.tokyoRoadMeshCount,
+      tokyoDrivableRoadMeshCount:world.tokyoDrivableRoadMeshCount,
       tokyoInferredRoadMeshCount:world.tokyoInferredRoadMeshCount,
       tokyoBuildingMeshCount:world.tokyoBuildingMeshCount,
       tokyoLaneMarkCount:world.tokyoLaneMarkCount,
@@ -69,7 +72,8 @@ const world = {
   yaw:0, speed:0, lateral:0, distance:0, prevPosition:new THREE.Vector3(),
   velocity:new THREE.Vector3(), safePosition:new THREE.Vector3(), safeYaw:0, safeTimer:0, steering:0, audio:null, soundStarted:false,
   tokyoSpawn:new THREE.Vector3(0,0,0), tokyoSpawnYaw:0, tokyoSpawnClearDistance:0,
-  tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0, tokyoDrivableRoadMeshCount:0,\n  tokyoSpawnRoadVerified:false, driveSurfaceY:0,
+  tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0, tokyoDrivableRoadMeshCount:0,
+  tokyoSpawnRoadVerified:false, driveSurfaceY:0,
   tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
   tokyoCity:null, tokyoCityBounds:null
 };
@@ -384,7 +388,8 @@ async function loadTokyoCity() {
 
   const visualStats = enhanceTokyoCity(cityRoot, scene, THREE, renderer);
   world.tokyoRoadMeshCount = visualStats.roadMeshCount;
-  world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;\n  world.tokyoDrivableRoadMeshCount = visualStats.drivableRoadMeshCount;
+  world.tokyoInferredRoadMeshCount = visualStats.inferredRoadMeshCount;
+  world.tokyoDrivableRoadMeshCount = visualStats.drivableRoadMeshCount;
   world.tokyoBuildingMeshCount = visualStats.buildingMeshCount;
   world.tokyoLaneMarkCount = visualStats.laneMarkCount;
 
@@ -494,6 +499,7 @@ function placeAtModeStart() {
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
   world.yaw=world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
+  world.driveSurfaceY=world.mode==="skill"?0:spawn.y;
   world.safeYaw=world.yaw;
   world.safeTimer=0;
   world.velocity.set(0,0,0);
