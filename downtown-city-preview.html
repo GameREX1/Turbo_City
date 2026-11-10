@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turbo City — Downtown City Kit Preview</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101923;color:#eef7fb;font-family:Inter,Arial,sans-serif}
+#view{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+#panel{position:fixed;z-index:2;top:18px;left:18px;max-width:min(440px,calc(100vw - 36px));padding:16px 18px;border:1px solid #30ddf566;border-radius:13px;background:#071522df;backdrop-filter:blur(12px);box-shadow:0 12px 40px #0006}
+h1{font-size:17px;margin:0 0 7px;letter-spacing:1px}p{font-size:12px;line-height:1.55;color:#b8c9d6;margin:0}
+#status{margin-top:9px;color:#70e9ff;font-size:11px;font-weight:700}
+#error{color:#ffb3a9;white-space:pre-wrap;overflow-wrap:anywhere}
+#controls{position:fixed;bottom:16px;right:16px;padding:10px 12px;background:#071522cc;border:1px solid #ffffff30;border-radius:9px;color:#c8d5de;font-size:11px}
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="panel">
+  <h1>GAMERAX · DOWNTOWN CITY KIT</h1>
+  <p>Private asset preview — sample block, PBR materials and shared textures.</p>
+  <div id="status">Checking asset Worker…</div>
+</div>
+<div id="controls">Drag: rotate · Wheel: zoom · Right-drag: pan</div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const ASSET_BASE = "https://turbo-city-assets.uk7186979.workers.dev/assets/";
+const status = document.getElementById("status");
+const view = document.getElementById("view");
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9bb1bd);
+scene.fog = new THREE.Fog(0x9bb1bd, 180, 520);
+
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 1500);
+camera.position.set(105, 86, 115);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+view.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xf1f7ff, 0x59604e, 1.45));
+const sun = new THREE.DirectionalLight(0xfff0d5, 2.1);
+sun.position.set(-90, 140, 80);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -100;
+sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100;
+sun.shadow.camera.bottom = -100;
+scene.add(sun);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(500, 500),
+  new THREE.MeshStandardMaterial({ color: 0x708466, roughness: 1 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.24;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.target.set(0, 10, 0);
+controls.update();
+
+function fail(error) {
+  console.error(error);
+  status.id = "error";
+  status.textContent = "Could not load sample block: " + (error?.message || error);
+}
+
+async function loadPreview() {
+  try {
+    const health = await fetch(ASSET_BASE.replace(/assets\/$/, "health"));
+    const healthData = await health.json();
+    if (!health.ok || !healthData.tokenConfigured) {
+      throw new Error("Asset Worker is not deployed or its GITHUB_TOKEN secret is missing.");
+    }
+    status.textContent = "Loading 118 placed city objects…";
+    const loader = new GLTFLoader();
+    const url = new URL("scenes/sample_block.gltf", ASSET_BASE).href;
+    const gltf = await loader.loadAsync(url);
+    const root = gltf.scene;
+    root.traverse((object) => {
+      if (object.isMesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
+        if (Array.isArray(object.material)) {
+          object.material.forEach((material) => {
+            if (material.map) material.map.anisotropy = 4;
+          });
+        } else if (object.material?.map) {
+          object.material.map.anisotropy = 4;
+        }
+      }
+    });
+    scene.add(root);
+
+    const bounds = new THREE.Box3().setFromObject(root);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    controls.target.copy(center);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x + maxDim * 0.92, center.y + maxDim * 0.72, center.z + maxDim * 1.05);
+    camera.near = Math.max(0.1, maxDim / 1500);
+    camera.far = maxDim * 30;
+    camera.updateProjectionMatrix();
+    controls.update();
+
+    status.textContent = "Loaded successfully · 118 nodes · " +
+      size.x.toFixed(1) + " m × " + size.z.toFixed(1) + " m";
+  } catch (error) {
+    fail(error);
+  }
+}
+
+loadPreview();
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
