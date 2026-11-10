@@ -91,7 +91,7 @@ export default {
     const apiUrl = `https://api.github.com/repos/${OWNER}/${REPOSITORY}/contents/${apiPath}?ref=${REF}`;
     const upstreamHeaders = {
       "Authorization": `Bearer ${env.GITHUB_TOKEN}`,
-      "Accept": "application/vnd.github.raw",
+      "Accept": "application/vnd.github.raw+json",
       "X-GitHub-Api-Version": "2022-11-28",
       "User-Agent": "GameRAX-Turbo-City-Asset-Worker"
     };
