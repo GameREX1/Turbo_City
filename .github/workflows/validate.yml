@@ -31,7 +31,7 @@ jobs:
         run: npm install --no-save --package-lock=false playwright
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Test Tokyo asset proxy
         run: node tests/worker-proxy.mjs
