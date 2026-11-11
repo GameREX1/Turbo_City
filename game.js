@@ -503,7 +503,8 @@ function placeAtModeStart() {
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
-  world.yaw=world.downtownCity && world.mode!== "skill" ? world.downtownSpawnYaw\n    : world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
+  world.yaw=world.downtownCity && world.mode!== "skill" ? world.downtownSpawnYaw
+    : world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
   world.driveSurfaceY=world.mode==="skill"?0:spawn.y;
   world.safeYaw=world.yaw;
   world.safeTimer=0;
