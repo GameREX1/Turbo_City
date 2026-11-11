@@ -175,6 +175,7 @@ export async function loadDowntownCity({ scene, world, setLoading = () => {} }) 
     buildingColliderCount,
     cityLimit: CITY_LIMIT
   };
+  cityRoot.userData.downtownStats = result;
   console.info("Turbo City: Downtown City Kit loaded", result);
   return result;
 }

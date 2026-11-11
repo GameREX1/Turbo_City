@@ -25,6 +25,7 @@ const $ = (id) => document.getElementById(id);
 const queryFlags = new URLSearchParams(window.location.search);
 const isSmokeMode = queryFlags.has("ciDebug");
 const isVisualTestMode = queryFlags.has("ciVisual");
+const isDowntownTestMode = queryFlags.has("ciDowntown");
 const isTestMode = isSmokeMode || isVisualTestMode;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const TOKYO_CITY_MODEL_URL = "https://tokyo-map-proxy.uk7186979.workers.dev/tokyo-city.glb";
@@ -33,7 +34,7 @@ const rand = (min, max) => min + Math.random() * (max - min);
 const input = { gas:false, brake:false, reverse:false, left:false, right:false };
 const keys = Object.create(null);
 // Optional browser-test diagnostics; disabled for normal visitors.
-if (isTestMode) {
+if (isTestMode || isDowntownTestMode) {
   window.__turboCityDebug = () => {
     const forward = new THREE.Vector3(Math.sin(world.yaw),0,-Math.cos(world.yaw));
     const playerBox = player ? new THREE.Box3().setFromObject(player) : null;
@@ -56,6 +57,12 @@ if (isTestMode) {
       driveSurfaceY:world.driveSurfaceY,
       tokyoSpawnYaw:world.tokyoSpawnYaw,
       tokyoSpawnClearDistance:world.tokyoSpawnClearDistance,
+      downtownCityLoaded:Boolean(world.downtownCity),
+      downtownStats:world.downtownCity?.userData?.downtownStats || null,
+      downtownSpawn:{x:world.downtownSpawn.x,y:world.downtownSpawn.y,z:world.downtownSpawn.z},
+      downtownSpawnYaw:world.downtownSpawnYaw,
+      cityLimit:world.cityLimit,
+      downtownBuildingColliders:world.buildings.length,
       tokyoRoadMeshCount:world.tokyoRoadMeshCount,
       tokyoDrivableRoadMeshCount:world.tokyoDrivableRoadMeshCount,
       tokyoInferredRoadMeshCount:world.tokyoInferredRoadMeshCount,
