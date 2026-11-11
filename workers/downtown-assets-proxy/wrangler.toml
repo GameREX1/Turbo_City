@@ -1,4 +1,4 @@
-name = "turbo-city-assets"
+name = "turbo-city-game"
 main = "index.js"
 compatibility_date = "2026-11-10"
 workers_dev = true
