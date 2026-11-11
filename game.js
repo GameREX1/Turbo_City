@@ -13,6 +13,7 @@ import { createRoadModule } from "./src/world/roads.js";
 import { createBuildingModule } from "./src/world/buildings.js";
 import { findTokyoRoadSpawn } from "./src/world/tokyo-spawn.js";
 import { enhanceTokyoCity } from "./src/world/tokyo-visuals.js";
+import { loadDowntownCity } from "./src/world/downtown-city.js";
 import { createActivityModule } from "./src/world/activities.js";
 import { createTrafficModule } from "./src/world/traffic.js";
 import { createVehicleModule } from "./src/vehicles/car.js";
@@ -75,7 +76,9 @@ const world = {
   tokyoRoadMeshCount:0, tokyoInferredRoadMeshCount:0, tokyoDrivableRoadMeshCount:0,
   tokyoSpawnRoadVerified:false, driveSurfaceY:0,
   tokyoBuildingMeshCount:0, tokyoLaneMarkCount:0,
-  tokyoCity:null, tokyoCityBounds:null
+  tokyoCity:null, tokyoCityBounds:null,
+  downtownCity:null, downtownSpawn:new THREE.Vector3(-28,0,0), downtownSpawnYaw:Math.PI/2,
+  cityLimit:null, cityTileSpacing:null
 };
 
 if(isSmokeMode) {
@@ -406,8 +409,8 @@ async function loadTokyoCity() {
 }
 
 async function buildWorld() {
-  // Browser automation keeps using the deterministic procedural test world;
-  // normal players load the full Tokyo GLB from the Worker.
+  // Browser automation remains on the deterministic procedural test world.
+  // Normal players load the copied Downtown City Kit directly from this repo.
   if (isTestMode) {
     roadSystem.buildGroundAndRoads();
     buildingSystem.buildCity();
@@ -421,17 +424,19 @@ async function buildWorld() {
   }
 
   try {
-    const result = await loadTokyoCity();
+    const result = await loadDowntownCity({ scene, world, setLoading });
     activitySystem.buildCollectibles();
-    // The Tokyo asset supplies its own terrain, streets and buildings, so the
-    // old procedural grid is not drawn over it.
     document.querySelectorAll('.mode[data-mode="skill"]').forEach((button) => {
       button.disabled = true;
-      button.title = "Skill course is not yet aligned to the Tokyo map.";
+      button.title = "Skill course is not yet aligned to the Downtown map.";
     });
-    console.info("Tokyo driving world ready.", result);
+    console.info("Downtown driving world ready.", result);
   } catch (error) {
-    console.error("Tokyo map failed to load; restoring the original procedural city.", error);
+    console.error("Downtown map failed to load; restoring the original procedural city.", error);
+    if (world.downtownCity) scene.remove(world.downtownCity);
+    world.downtownCity = null;
+    world.cityLimit = null;
+    world.cityTileSpacing = null;
     world.buildings.length = 0;
     world.traffic.length = 0;
     roadSystem.buildGroundAndRoads();
@@ -439,11 +444,11 @@ async function buildWorld() {
     activitySystem.buildSkillDistrict();
     activitySystem.buildCollectibles();
     trafficSystem.buildTraffic();
-    showError("Tokyo map could not load. The original city has been restored. " +
-      (error?.message || "Check the Worker URL and CORS settings."));
+    showError("Downtown map could not load. The original city has been restored. " +
+      (error?.message || "Check that the Downtown assets are present in this repository."));
   }
 
-  if (!world.tokyoCity) {
+  if (!world.downtownCity) {
     scene.traverse((object) => {
       if (object.isMesh) object.castShadow = false;
     });
@@ -493,11 +498,12 @@ document.querySelectorAll(".mode").forEach(btn=>btn.addEventListener("click",()=
 function placeAtModeStart() {
   const spawn=world.mode==="skill"
     ? new THREE.Vector3(400,0,-330)
-    : (world.tokyoCity ? world.tokyoSpawn.clone() : new THREE.Vector3(0,0,0));
+    : (world.downtownCity ? world.downtownSpawn.clone()
+      : world.tokyoCity ? world.tokyoSpawn.clone() : new THREE.Vector3(0,0,0));
   player.position.copy(spawn);
   world.prevPosition.copy(spawn);
   world.safePosition.copy(spawn);
-  world.yaw=world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
+  world.yaw=world.downtownCity && world.mode!== "skill" ? world.downtownSpawnYaw\n    : world.tokyoCity && world.mode!== "skill" ? world.tokyoSpawnYaw : 0;
   world.driveSurfaceY=world.mode==="skill"?0:spawn.y;
   world.safeYaw=world.yaw;
   world.safeTimer=0;
@@ -661,7 +667,7 @@ async function init() {
     pmremGenerator.dispose();
     loadOutdoorCarEnvironment();
 
-    setLoading(14,"LOADING TOKYO CITY MAP…");
+    setLoading(14,"LOADING DOWNTOWN CITY MAP…");
     await buildWorld();
     setLoading(48,"PREPARING DRIVING EXPERIENCE…");
     // Do not expose the procedural fallback while the detailed 3D car is loading.

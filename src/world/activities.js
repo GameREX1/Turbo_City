@@ -72,14 +72,23 @@ export function createActivityModule({ scene, world, material, box, cylinder, si
     scene.add(group);world.stars.push({group,active:true});
   }
   function buildCollectibles() {
-    const points=[
-      [-260,2.2,-240],[-160,2.2,-300],[0,2.2,-270],[160,2.2,-300],[270,2.2,-160],
-      [300,2.2,0],[160,2.2,160],[0,2.2,260],[-160,2.2,280],[-300,2.2,160],
-      [-390,2.2,-160],[390,2.2,160],[-390,2.2,390],[390,2.2,-260],
-      [400,2.2,-390],[400,2.2,-430],[372,2.2,-420],[428,2.2,-420],
-      [240,2.2,-420],[0,2.2,-440],[-240,2.2,420],[-420,2.2,0],
-      [230,2.2,420],[-80,2.2,120],[80,2.2,-120],[320,2.2,320]
-    ];
+    const points = world.downtownCity
+      ? [
+          [-180,2.2,-205],[-90,2.2,-205],[0,2.2,-205],[90,2.2,-205],[180,2.2,-205],
+          [-180,2.2,-155],[-90,2.2,-155],[0,2.2,-155],[90,2.2,-155],[180,2.2,-155],
+          [-205,2.2,-90],[-155,2.2,-90],[-205,2.2,0],[-155,2.2,0],
+          [155,2.2,0],[205,2.2,0],[155,2.2,90],[205,2.2,90],
+          [-180,2.2,155],[-90,2.2,155],[0,2.2,155],[90,2.2,155],[180,2.2,155],
+          [-180,2.2,205],[-90,2.2,205],[0,2.2,205],[90,2.2,205],[180,2.2,205]
+        ]
+      : [
+          [-260,2.2,-240],[-160,2.2,-300],[0,2.2,-270],[160,2.2,-300],[270,2.2,-160],
+          [300,2.2,0],[160,2.2,160],[0,2.2,260],[-160,2.2,280],[-300,2.2,160],
+          [-390,2.2,-160],[390,2.2,160],[-390,2.2,390],[390,2.2,-260],
+          [400,2.2,-390],[400,2.2,-430],[372,2.2,-420],[428,2.2,-420],
+          [240,2.2,-420],[0,2.2,-440],[-240,2.2,420],[-420,2.2,0],
+          [230,2.2,420],[-80,2.2,120],[80,2.2,-120],[320,2.2,320]
+        ];
     points.forEach((p,i)=>addStar(p[0],p[1],p[2],i));
   }
   
@@ -131,19 +140,32 @@ export function createActivityModule({ scene, world, material, box, cylinder, si
   }
   function prepareRace(skillCourse=false) {
     clearRaceGates();
-    world.route=skillCourse?[
-      new THREE.Vector3(400,0,-378),
-      new THREE.Vector3(388,0,-412),
-      new THREE.Vector3(412,0,-446),
-      new THREE.Vector3(400,0,-480)
-    ]:[
-      new THREE.Vector3(0,0,-72),
-      new THREE.Vector3(150,0,-158),
-      new THREE.Vector3(300,0,-158),
-      new THREE.Vector3(300,0,0),
-      new THREE.Vector3(150,0,158),
-      new THREE.Vector3(0,0,72)
-    ];
+    world.route = skillCourse
+      ? [
+          new THREE.Vector3(400,0,-378),
+          new THREE.Vector3(388,0,-412),
+          new THREE.Vector3(412,0,-446),
+          new THREE.Vector3(400,0,-480)
+        ]
+      : world.downtownCity
+        ? [
+            new THREE.Vector3(-90,0,-90),
+            new THREE.Vector3(0,0,-90),
+            new THREE.Vector3(90,0,-90),
+            new THREE.Vector3(90,0,0),
+            new THREE.Vector3(90,0,90),
+            new THREE.Vector3(0,0,90),
+            new THREE.Vector3(-90,0,90),
+            new THREE.Vector3(-90,0,0)
+          ]
+        : [
+            new THREE.Vector3(0,0,-72),
+            new THREE.Vector3(150,0,-158),
+            new THREE.Vector3(300,0,-158),
+            new THREE.Vector3(300,0,0),
+            new THREE.Vector3(150,0,158),
+            new THREE.Vector3(0,0,72)
+          ];
     world.route.forEach((p,i)=>createGate(p,i,i===world.route.length-1));
     world.raceActive=true;world.raceStart=performance.now();world.raceIndex=0;
     if(world.gates[0])world.gates[0].active=true;

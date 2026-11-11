@@ -80,27 +80,44 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
   function drawMiniMap() {
     const player = getPlayer();
     const canvas = $("minimap"), ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
+    const extent = Number.isFinite(world.cityLimit) ? world.cityLimit : 600;
+    const spacing = Number.isFinite(world.cityTileSpacing) ? world.cityTileSpacing : ROAD_SPACING;
+    const mapX = (value) => (value + extent) / (extent * 2) * w;
+    const mapZ = (value) => (value + extent) / (extent * 2) * h;
+
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#101d28";
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#4b5963";
-    ctx.lineWidth = 7;
-    for (let p = -3; p <= 3; p++) {
-      const q = (p * ROAD_SPACING + 600) / 1200 * w;
-      ctx.beginPath(); ctx.moveTo(q, 0); ctx.lineTo(q, h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, q); ctx.lineTo(w, q); ctx.stroke();
+    ctx.lineWidth = world.downtownCity ? 4 : 7;
+    const gridRadius = Math.ceil(extent / spacing);
+    for (let p = -gridRadius; p <= gridRadius; p++) {
+      const x = mapX(p * spacing);
+      const z = mapZ(p * spacing);
+      if (x >= 0 && x <= w) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      if (z >= 0 && z <= h) {
+        ctx.beginPath(); ctx.moveTo(0, z); ctx.lineTo(w, z); ctx.stroke();
+      }
     }
-    ctx.fillStyle = "#68835e";
-    ctx.fillRect((340 + 600) / 1200 * w, (-470 + 600) / 1200 * h, (120 / 1200) * w, (120 / 1200) * h);
-    for (const s of world.stars) if (s.active) {
-      const x = (s.group.position.x + 600) / 1200 * w, y = (s.group.position.z + 600) / 1200 * h;
-      ctx.fillStyle = "#ffc654"; ctx.beginPath(); ctx.arc(x, y, 2.7, 0, Math.PI * 2); ctx.fill();
+
+    if (!world.downtownCity) {
+      ctx.fillStyle = "#68835e";
+      ctx.fillRect(mapX(340), mapZ(-470), mapX(460) - mapX(340), mapZ(-350) - mapZ(-470));
     }
+
+    for (const star of world.stars) if (star.active) {
+      const x = mapX(star.group.position.x), y = mapZ(star.group.position.z);
+      ctx.fillStyle = "#ffc654";
+      ctx.beginPath(); ctx.arc(x, y, 2.7, 0, Math.PI * 2); ctx.fill();
+    }
+
     if (world.raceActive && world.gates[world.raceIndex]) {
       const gate = world.gates[world.raceIndex].position;
-      const gx = (gate.x + 600) / 1200 * w, gy = (gate.z + 600) / 1200 * h;
-      const px = player ? (player.position.x + 600) / 1200 * w : 0;
-      const py = player ? (player.position.z + 600) / 1200 * h : 0;
+      const gx = mapX(gate.x), gy = mapZ(gate.z);
+      const px = player ? mapX(player.position.x) : 0;
+      const py = player ? mapZ(player.position.z) : 0;
       ctx.save();
       ctx.setLineDash([5, 5]); ctx.strokeStyle = "#30ddf5"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(gx, gy); ctx.stroke(); ctx.setLineDash([]);
@@ -108,8 +125,9 @@ export function createCameraModule({ world, getPlayer, getCamera, ROAD_SPACING, 
       ctx.beginPath(); ctx.arc(gx, gy, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.restore();
     }
+
     if (player) {
-      const x = (player.position.x + 600) / 1200 * w, y = (player.position.z + 600) / 1200 * h;
+      const x = mapX(player.position.x), y = mapZ(player.position.z);
       ctx.save(); ctx.translate(x, y); ctx.rotate(-world.yaw);
       ctx.fillStyle = "#4ce6fa"; ctx.strokeStyle = "#07131c"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 8); ctx.lineTo(0, 5); ctx.lineTo(-6, 8); ctx.closePath(); ctx.fill(); ctx.stroke();

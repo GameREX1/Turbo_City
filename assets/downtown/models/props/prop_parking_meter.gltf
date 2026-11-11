@@ -1,0 +1,287 @@
+{
+ "asset": {
+  "generator": "Khronos glTF Blender I/O v4.2.70",
+  "version": "2.0",
+  "copyright": "(c) 2026 Greanapple Games. All rights reserved.",
+  "extras": {
+   "creator": "Greanapple Games",
+   "author": "Greanapple Games"
+  }
+ },
+ "scene": 0,
+ "scenes": [
+  {
+   "name": "Scene",
+   "nodes": [
+    0,
+    1
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "mesh": 0,
+   "name": "prop_parking_meter",
+   "extras": {
+    "creator": "Greanapple Games"
+   }
+  },
+  {
+   "mesh": 1,
+   "name": "prop_parking_meter_col-colonly",
+   "extras": {
+    "creator": "Greanapple Games"
+   }
+  }
+ ],
+ "materials": [
+  {
+   "name": "mat_metal_dark",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.03500000014901161,
+     0.03700000047683716,
+     0.03999999910593033,
+     1
+    ],
+    "metallicFactor": 0.8500000238418579,
+    "roughnessFactor": 0.3799999952316284
+   }
+  },
+  {
+   "name": "mat_glass",
+   "pbrMetallicRoughness": {
+    "baseColorFactor": [
+     0.02500000037252903,
+     0.029999999329447746,
+     0.03500000014901161,
+     1
+    ],
+    "metallicFactor": 0,
+    "roughnessFactor": 0.03999999910593033
+   }
+  }
+ ],
+ "meshes": [
+  {
+   "name": "prop_parking_meter",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 0,
+      "NORMAL": 1,
+      "TEXCOORD_0": 2
+     },
+     "indices": 3,
+     "material": 0
+    },
+    {
+     "attributes": {
+      "POSITION": 4,
+      "NORMAL": 5,
+      "TEXCOORD_0": 6
+     },
+     "indices": 7,
+     "material": 1
+    }
+   ]
+  },
+  {
+   "name": "prop_parking_meter_col-colonly",
+   "primitives": [
+    {
+     "attributes": {
+      "POSITION": 8,
+      "NORMAL": 9,
+      "TEXCOORD_0": 10
+     },
+     "indices": 11
+    }
+   ]
+  }
+ ],
+ "accessors": [
+  {
+   "bufferView": 0,
+   "componentType": 5126,
+   "count": 132,
+   "max": [
+    0.10999999940395355,
+    1.5199999809265137,
+    0.09510564804077148
+   ],
+   "min": [
+    -0.10999999940395355,
+    0,
+    -0.09510564804077148
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 1,
+   "componentType": 5126,
+   "count": 132,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 2,
+   "componentType": 5126,
+   "count": 132,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 3,
+   "componentType": 5123,
+   "count": 228,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 4,
+   "componentType": 5126,
+   "count": 4,
+   "max": [
+    0.07000000029802322,
+    1.3799999952316284,
+    -0.09099999815225601
+   ],
+   "min": [
+    -0.07000000029802322,
+    1.25,
+    -0.09099999815225601
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 5,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 6,
+   "componentType": 5126,
+   "count": 4,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 7,
+   "componentType": 5123,
+   "count": 6,
+   "type": "SCALAR"
+  },
+  {
+   "bufferView": 8,
+   "componentType": 5126,
+   "count": 24,
+   "max": [
+    0.10999999940395355,
+    1.5199999809265137,
+    0.09510564804077148
+   ],
+   "min": [
+    -0.10999999940395355,
+    0,
+    -0.09510564804077148
+   ],
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 9,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC3"
+  },
+  {
+   "bufferView": 10,
+   "componentType": 5126,
+   "count": 24,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 11,
+   "componentType": 5123,
+   "count": 36,
+   "type": "SCALAR"
+  }
+ ],
+ "bufferViews": [
+  {
+   "buffer": 0,
+   "byteLength": 1584,
+   "byteOffset": 0,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1584,
+   "byteOffset": 1584,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 1056,
+   "byteOffset": 3168,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 456,
+   "byteOffset": 4224,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 4680,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 48,
+   "byteOffset": 4728,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 32,
+   "byteOffset": 4776,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 12,
+   "byteOffset": 4808,
+   "target": 34963
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 4820,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 288,
+   "byteOffset": 5108,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 192,
+   "byteOffset": 5396,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 72,
+   "byteOffset": 5588,
+   "target": 34963
+  }
+ ],
+ "buffers": [
+  {
+   "byteLength": 5660,
+   "uri": "prop_parking_meter.bin"
+  }
+ ]
+}

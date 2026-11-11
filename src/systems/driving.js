@@ -76,7 +76,8 @@ export function createDrivingModule({ world, cars, getCurrentCarIndex, getPlayer
     player.position.y=Number.isFinite(world.driveSurfaceY)?world.driveSurfaceY:0;
   
     // Stay within the designed city limits.
-    if(Math.abs(player.position.x)>WORLD_LIMIT||Math.abs(player.position.z)>WORLD_LIMIT) {
+    const cityLimit=Number.isFinite(world.cityLimit)?world.cityLimit:WORLD_LIMIT;
+    if(Math.abs(player.position.x)>cityLimit||Math.abs(player.position.z)>cityLimit) {
       player.position.copy(old);world.velocity.multiplyScalar(-.16);hitSomething=true;toast("CITY LIMIT — TURN BACK",1);
     }
   

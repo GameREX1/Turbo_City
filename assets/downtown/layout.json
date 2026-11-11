@@ -1,0 +1,952 @@
+{
+  "source": "scenes/sample_block.tscn",
+  "creator": "Greanapple Games",
+  "units": "meters",
+  "tileSize": 90,
+  "instances": [
+    {
+      "name": "road_sidewalk_01",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_02",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_03",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_04",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_01",
+      "asset": "models/roads/road_straight.gltf",
+      "x": -40,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_05",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_06",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_07",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_08",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -40,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_09",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_10",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_11",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_12",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_02",
+      "asset": "models/roads/road_straight.gltf",
+      "x": -30,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_13",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_14",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_15",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_16",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -30,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_17",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_18",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_19",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_20",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_03",
+      "asset": "models/roads/road_straight.gltf",
+      "x": -20,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_21",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_22",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_23",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_24",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -20,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_25",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_26",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_27",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_28",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_crosswalk_01",
+      "asset": "models/roads/road_crosswalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_29",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_30",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_31",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_32",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": -10,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_04",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": 40,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_straight_05",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": 30,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_straight_06",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": 20,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_crosswalk_02",
+      "asset": "models/roads/road_crosswalk.gltf",
+      "x": 0,
+      "y": 0,
+      "z": 10,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_crossroads_01",
+      "asset": "models/roads/road_crossroads.gltf",
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_crosswalk_03",
+      "asset": "models/roads/road_crosswalk.gltf",
+      "x": 0,
+      "y": 0,
+      "z": -10,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_straight_07",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": -20,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_straight_08",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": -30,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_straight_09",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 0,
+      "y": 0,
+      "z": -40,
+      "yaw": 1.570796
+    },
+    {
+      "name": "road_sidewalk_33",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_34",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_35",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_36",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_crosswalk_04",
+      "asset": "models/roads/road_crosswalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_37",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_38",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_39",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_40",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 10,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_41",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_42",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_43",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_44",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_10",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 20,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_45",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_46",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_47",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_48",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 20,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_49",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_50",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_51",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_52",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_11",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 30,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_53",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_54",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_55",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_56",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 30,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_57",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": 40,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_58",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": 30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_59",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": 20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_60",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": 10,
+      "yaw": 0
+    },
+    {
+      "name": "road_straight_12",
+      "asset": "models/roads/road_straight.gltf",
+      "x": 40,
+      "y": 0,
+      "z": 0,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_61",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": -10,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_62",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": -20,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_63",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": -30,
+      "yaw": 0
+    },
+    {
+      "name": "road_sidewalk_64",
+      "asset": "models/roads/road_sidewalk.gltf",
+      "x": 40,
+      "y": 0,
+      "z": -40,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_corner_4st_L_01",
+      "asset": "models/buildings/bldg_corner_4st_L.gltf",
+      "x": 12,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_shop_brick_3st_01",
+      "asset": "models/buildings/bldg_shop_brick_3st.gltf",
+      "x": 24,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_shop_stone_4st_01",
+      "asset": "models/buildings/bldg_shop_stone_4st.gltf",
+      "x": 35,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_corner_4st_01",
+      "asset": "models/buildings/bldg_corner_4st.gltf",
+      "x": -12,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_shop_brick_6st_01",
+      "asset": "models/buildings/bldg_shop_brick_6st.gltf",
+      "x": -24,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_apartments_5st_01",
+      "asset": "models/buildings/bldg_apartments_5st.gltf",
+      "x": -37,
+      "y": 0.15,
+      "z": 12,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_shop_brick_2st_01",
+      "asset": "models/buildings/bldg_shop_brick_2st.gltf",
+      "x": -49,
+      "y": 0.15,
+      "z": 11,
+      "yaw": 0
+    },
+    {
+      "name": "bldg_bank_3st_01",
+      "asset": "models/buildings/bldg_bank_3st.gltf",
+      "x": 14,
+      "y": 0.15,
+      "z": -13,
+      "yaw": -3.141593
+    },
+    {
+      "name": "bldg_shop_brick_3st_02",
+      "asset": "models/buildings/bldg_shop_brick_3st.gltf",
+      "x": 28,
+      "y": 0.15,
+      "z": -12,
+      "yaw": -3.141593
+    },
+    {
+      "name": "bldg_shop_brick_2st_02",
+      "asset": "models/buildings/bldg_shop_brick_2st.gltf",
+      "x": 37,
+      "y": 0.15,
+      "z": -11,
+      "yaw": -3.141593
+    },
+    {
+      "name": "bldg_office_tower_10st_01",
+      "asset": "models/buildings/bldg_office_tower_10st.gltf",
+      "x": -15,
+      "y": 0.15,
+      "z": -15,
+      "yaw": -3.141593
+    },
+    {
+      "name": "bldg_shop_stone_4st_02",
+      "asset": "models/buildings/bldg_shop_stone_4st.gltf",
+      "x": -31,
+      "y": 0.15,
+      "z": -12,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_streetlight_01",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": -35,
+      "y": 0.15,
+      "z": -4.4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_streetlight_02",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": -35,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_streetlight_03",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": -20,
+      "y": 0.15,
+      "z": -4.4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_streetlight_04",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": -20,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_streetlight_05",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": 20,
+      "y": 0.15,
+      "z": -4.4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_streetlight_06",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": 20,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_streetlight_07",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": 35,
+      "y": 0.15,
+      "z": -4.4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_streetlight_08",
+      "asset": "models/props/prop_streetlight.gltf",
+      "x": 35,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_01",
+      "asset": "models/props/prop_tree.gltf",
+      "x": -12,
+      "y": 0.15,
+      "z": 4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_02",
+      "asset": "models/props/prop_tree.gltf",
+      "x": 12,
+      "y": 0.15,
+      "z": 4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_03",
+      "asset": "models/props/prop_tree.gltf",
+      "x": 27,
+      "y": 0.15,
+      "z": 4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_04",
+      "asset": "models/props/prop_tree.gltf",
+      "x": -16,
+      "y": 0.15,
+      "z": -4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_05",
+      "asset": "models/props/prop_tree.gltf",
+      "x": 16,
+      "y": 0.15,
+      "z": -4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_tree_06",
+      "asset": "models/props/prop_tree.gltf",
+      "x": 31,
+      "y": 0.15,
+      "z": -4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_traffic_light_01",
+      "asset": "models/props/prop_traffic_light.gltf",
+      "x": 4.4,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_traffic_light_02",
+      "asset": "models/props/prop_traffic_light.gltf",
+      "x": -4.4,
+      "y": 0.15,
+      "z": -4.4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_bench_01",
+      "asset": "models/props/prop_bench.gltf",
+      "x": -15,
+      "y": 0.15,
+      "z": 4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_trash_can_01",
+      "asset": "models/props/prop_trash_can.gltf",
+      "x": -17,
+      "y": 0.15,
+      "z": 4.2,
+      "yaw": 0
+    },
+    {
+      "name": "prop_fire_hydrant_01",
+      "asset": "models/props/prop_fire_hydrant.gltf",
+      "x": 8,
+      "y": 0.15,
+      "z": 4.3,
+      "yaw": 0
+    },
+    {
+      "name": "prop_bus_stop_01",
+      "asset": "models/props/prop_bus_stop.gltf",
+      "x": 24,
+      "y": 0.15,
+      "z": -4,
+      "yaw": -3.141593
+    },
+    {
+      "name": "prop_parking_meter_01",
+      "asset": "models/props/prop_parking_meter.gltf",
+      "x": 15,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_parking_meter_02",
+      "asset": "models/props/prop_parking_meter.gltf",
+      "x": 18,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    },
+    {
+      "name": "prop_sign_stop_01",
+      "asset": "models/props/prop_sign_stop.gltf",
+      "x": -4.5,
+      "y": 0.15,
+      "z": 6,
+      "yaw": 0
+    },
+    {
+      "name": "prop_sign_street_name_01",
+      "asset": "models/props/prop_sign_street_name.gltf",
+      "x": 4.6,
+      "y": 0.15,
+      "z": -4.6,
+      "yaw": 0
+    },
+    {
+      "name": "prop_sign_parking_01",
+      "asset": "models/props/prop_sign_parking.gltf",
+      "x": -30,
+      "y": 0.15,
+      "z": 4.4,
+      "yaw": 0
+    }
+  ]
+}

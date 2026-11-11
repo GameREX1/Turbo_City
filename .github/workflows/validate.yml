@@ -39,6 +39,9 @@ jobs:
       - name: Test Tokyo road spawn selection
         run: node tests/tokyo-spawn.mjs
 
+      - name: Check Downtown city kit assets
+        run: node tests/downtown-assets.mjs
+
       - name: Start local web server
         run: |
           python3 -m http.server 4173 > /tmp/turbo-city-http.log 2>&1 &
